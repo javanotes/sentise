@@ -4,6 +4,7 @@ bin/
 .gradle/
 .settings/
 build/
+_supervised/
 
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
