@@ -21,6 +21,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.junit.Assert;
 import org.junit.Test;
@@ -34,6 +35,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.util.ResourceUtils;
 
+import weka.classifiers.Classifier;
+import weka.classifiers.Evaluation;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instances;
@@ -114,6 +117,20 @@ public class ClassifierServiceTest {
 		
 		double pred = classifier.classifyInstance(instances.instance(0), null);
 		System.err.println("Class predicted: " + instances.classAttribute().value((int) pred));
+	}
+	
+	//@Test
+	public void testEvaluateBuiltClassifier() throws Exception 
+	{
+		
+		testBuildClassifierWithInstances();
+		Instances data = readFile();//make this a different eval dataset
+		data.setClassIndex(1);
+		Evaluation eval = new Evaluation(data);
+		Classifier classif = classifier.gatherClassifier(null).model;
+		eval.crossValidateModel(classif, data, 10, new Random());
+		
+		System.out.println(eval.toSummaryString());
 	}
 	
 }

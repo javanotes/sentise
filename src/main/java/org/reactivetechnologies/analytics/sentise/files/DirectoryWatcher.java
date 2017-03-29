@@ -78,7 +78,7 @@ public class DirectoryWatcher implements Runnable {
 		}
 		setInitialFiles(walkDirectory(root));
 		handler.handleInitialFiles(getInitialFiles());
-		log.info("Registered file change listeners on root dir- " + root);
+		log.info("Registered trigger file listener on dir [" + root+"]");
 	}
 
 	/**

@@ -16,9 +16,10 @@
 package org.reactivetechnologies.analytics.sentise.service;
 
 import org.reactivetechnologies.analytics.sentise.EngineException;
-import org.reactivetechnologies.analytics.sentise.core.AbstractIncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.dto.ClassifiedModel;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
+import org.reactivetechnologies.analytics.sentise.dto.RequestData;
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
 import org.reactivetechnologies.analytics.sentise.facade.ModelCombinerService;
 import org.reactivetechnologies.analytics.sentise.facade.ModelExecutionService;
@@ -40,15 +41,16 @@ public class ModelExecutionServiceImpl implements ModelExecutionService {
 	private Publisher publisher;
 	@Autowired
 	private ModelCombinerService combiner;
-	@Value("${weka.classifier.train.dataset.chunkLen:1000}")
+	@Value("${weka.classifier.train.dataset.batchSize:100}")
 	private int maxDataLen;
 	
 	private static final Logger log = LoggerFactory.getLogger(ModelExecutionServiceImpl.class);
 	
 	private static String getDomain(String domain)
 	{
-		return StringUtils.hasText(domain) ? domain : AbstractIncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
+		return StringUtils.hasText(domain) ? domain : IncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
 	}
+	
 	@Override
 	public void buildClassifier(Instances data, String domain) {
 		WekaData[] wData = new WekaData(data).split(maxDataLen);
@@ -71,6 +73,29 @@ public class ModelExecutionServiceImpl implements ModelExecutionService {
 	public ClassifiedModel gatherClassifier(String domain) throws EngineException {
 		RegressionModel model = combiner.retrieveModel(getDomain(domain), true);
 		return new ClassifiedModel(model.getCombineStatus(), model.getTrainedClassifier());
+	}
+	@Override
+	public void buildClassifier(RequestData request) throws EngineException {
+		try 
+		{
+			Instances ins = request.toInstances();
+			buildClassifier(ins, request.getDomain());
+		} 
+		catch (Exception e) {
+			throw new EngineException(e);
+		}
+		
+	}
+	@Override
+	public String classifyInstance(RequestData request) throws Exception {
+		try 
+		{
+			Instance ins = request.toInstance();
+			double d = classifyInstance(ins, request.getDomain());
+			return request.getStructure().classAttribute().value((int) d);
+		} catch (Exception e) {
+			throw new EngineException(e);
+		}
 	}
 
 }

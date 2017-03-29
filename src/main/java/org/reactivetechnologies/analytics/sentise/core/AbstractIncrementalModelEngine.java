@@ -21,7 +21,8 @@ public abstract class AbstractIncrementalModelEngine extends AbstractClassifier 
 	private static final long serialVersionUID = 4302332827921394008L;
 
 	/**
-	 * Extract the structure from a given {@linkplain Instances}.
+	 * Extract the structure from a given {@linkplain Instances}. Assuming the class 
+	 * attribute is the last.
 	 * @param i
 	 * @return
 	 */
@@ -51,7 +52,9 @@ public abstract class AbstractIncrementalModelEngine extends AbstractClassifier 
 	 */
 	public abstract RegressionModel ensembleBuiltModels(List<RegressionModel> models, CombinerType combiner, WekaData evaluationSet)
 			throws EngineException;
-
-	
-
+	/**
+	 * Subclasses to override this method for initialization codes.
+	 * @return
+	 */
+	protected abstract boolean onInitialization();
 }

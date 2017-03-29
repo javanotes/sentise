@@ -83,6 +83,21 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 
 	 */
 	
+	protected boolean onInitialization() {
+		thread = Executors.newSingleThreadExecutor(new ThreadFactory() {
+			
+			@Override
+			public Thread newThread(Runnable r) {
+				Thread t = new Thread(r, "IncrClassifBuildThread-"+domain);
+				return t;
+			}
+		});
+		keepConsuming = true;
+		buildTask = new BuildClassifierTask();
+		thread.submit(buildTask);
+		return false;
+	}
+	
 	protected boolean isUpdateable() {
 		return clazzifier != null && (clazzifier instanceof UpdateableClassifier);
 	}
@@ -130,13 +145,12 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		return clazzifier != null ? clazzifier.getClass().getSimpleName() : "n/a";
 	}
 	@PostConstruct
-	void init() 
+	void initialize() 
 	{
 		instanceQ = new ArrayBlockingQueue<>(queueBacklog);
-		loadAndInitializeModel();
-		
-		log.info(domain+"| ** Weka Classifier loaded [" + clazzifier.getClass()+ "] **");
+		onInitialization();
 		if (log.isDebugEnabled()) {
+			log.info(domain+"| ** Weka Classifier loaded [" + clazzifier.getClass()+ "] **");
 			log.debug("weka.classifier.tokenize? " + filterDataset);
 			log.debug("weka.classifier.tokenize.options: " + filterOpts);
 			log.debug(clazzifier.toString());
@@ -144,24 +158,8 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 
 	}
 
-	private volatile boolean keepConsuming;
+	protected volatile boolean keepConsuming;
 	private BuildClassifierTask buildTask;
-	protected boolean loadAndInitializeModel() 
-	{
-		thread = Executors.newSingleThreadExecutor(new ThreadFactory() {
-			
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r, "IncrClassifBuildThread-"+domain);
-				return t;
-			}
-		});
-		keepConsuming = true;
-		buildTask = new BuildClassifierTask();
-		thread.submit(buildTask);
-		return false;
-	}
-
 	/**
 	 * 
 	 * @param c
@@ -288,12 +286,12 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		@Override
 		public void run() 
 		{
-			log.info(domain+"| Starting classifier executor thread..");
+			log.info(domain+"| Starting classifier update worker");
 			while (keepConsuming) 
 			{
 				build();
 			}
-			log.info(domain+"| Stopped classifier executor thread");
+			log.debug(domain+"| Stopped classifier executor thread");
 		}
 	}
 
@@ -315,27 +313,29 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		
 	}
 	@PreDestroy
-	void stopWorker() {
-		onStop();
+	void destroy() {
+		onDestruction();
 		instanceQ.offer(new Poison());
 		thread.shutdown();
 		
 	}
-	protected void onStop() {
-		
+	/**
+	 * To be invoked on destroy. Subclasses to override.
+	 */
+	protected void onDestruction() {
 		
 	}
 	/**
 	 * Filter if required. Expects the training string to be the first attribute in the instance.
-	 * @param i
+	 * @param data
 	 * @return
 	 * @throws Exception
 	 */
-	protected Instances filterInstances(WekaData i) throws Exception {
+	protected Instances filterInstances(WekaData data) throws Exception {
 		if (filterDataset) {
-			return TextPreprocessor.filter(i.getInstances(), filterOpts, false, lucene);
+			return TextPreprocessor.filter(data.getInstances(), filterOpts, false, lucene);
 		}
-		return i.getInstances();
+		return data.getInstances();
 	}
 	protected boolean attribsInitialized;
 	/**
@@ -345,17 +345,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 
 	private BlockingQueue<Instances> instanceQ;
 	protected Instances structure;
-	/**
-	 * Extract the structure from a given {@linkplain Instances}.
-	 * @param i
-	 * @return
-	 */
-	public static Instances getStructure(Instances i)
-	{
-		Instances s = new Instances(i, 0);
-		s.setClassIndex(i.numAttributes()-1);
-		return s;
-	}
+	
 	private void initAttribs(Instances data) throws Exception
 	{
 		log.debug(data.toSummaryString());

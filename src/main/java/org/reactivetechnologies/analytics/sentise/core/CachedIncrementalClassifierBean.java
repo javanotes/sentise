@@ -45,9 +45,11 @@ import java.util.concurrent.TimeUnit;
 
 import org.reactivetechnologies.analytics.sentise.OperationFailedUnexpectedly;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
+import org.reactivetechnologies.analytics.sentise.files.ResourceLock;
 import org.reactivetechnologies.ticker.utils.CommonHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.BeanCreationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.Assert;
@@ -69,6 +71,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	public static final String CACHED_FILE_NAME = "__Weka_.model";
 	public static final String CACHE_SUBDIR = "_supervised";
 	public static final String CACHE_SUBDIR2 = "_domains";
+	public static final String LOCK_FILE = ".lock";
 	
 	/**
 	 * 
@@ -115,9 +118,20 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 			log.error(domain+"| While trying to save model", e);
 		}
 	}
+	private ResourceLock fileLock;
+	private void lockCacheArea(File f) throws IOException
+	{
+		fileLock = new ResourceLock();
+		try {
+			fileLock.lock(f, LOCK_FILE);
+		} catch (IllegalAccessException e) {
+			throw new IOException(
+					"Cache path already in use by another process. Use a different 'weka.classifier.cache.path', or delete .lock file under ../_domains/ if no other process is running.");
+		}
+		
+	}
 	private Path filePath;
-	
-	private void prepareFilePath()
+	private void prepareFilePath() throws IOException
 	{
 		String path = System.getProperty(cacheFilePath);
 		if(path == null)
@@ -128,10 +142,11 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 			f.mkdirs();
 		
 		Assert.isTrue(f.isDirectory(), "Not a valid directory- "+path);
+		lockCacheArea(f);
 		
 		filePath = Paths.get(f.getAbsolutePath(), classifierAlgorithm()+CACHED_FILE_NAME);
 		
-		log.info(domain+"| Cached file path- "+filePath);
+		log.debug(domain+"| Cached file path => "+filePath);
 	}
 	/**
 	 * Save the serialized model file. Can be overriden to provide a different caching media.
@@ -251,20 +266,32 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		}, 0, syncDelay, TimeUnit.SECONDS);
 	}
 	@Override
-	protected boolean loadAndInitializeModel() 
+	protected boolean onInitialization() 
 	{
 		boolean loaded = false;
-		super.loadAndInitializeModel();
-		prepareFilePath();
+		try {
+			prepareFilePath();
+		} catch (IOException e) {
+			log.error("Unable to initialize engine!", e);
+			throw new BeanCreationException("Unable to initialize engine!", e);
+		}
 		loaded = loadSavedModel();
+		//start the build thread
+		super.onInitialization();
+		//start the file sync thread
 		initSyncThread();
 		return loaded;
 
 	}
 	
 	@Override
-	protected void onStop() {
+	protected void onDestruction() {
 		dumpModelSnapshot();
 		log.info(domain+"| File sync task run on stop");
+		try {
+			fileLock.close();
+		} catch (IOException e) {
+			
+		}
 	}
 }

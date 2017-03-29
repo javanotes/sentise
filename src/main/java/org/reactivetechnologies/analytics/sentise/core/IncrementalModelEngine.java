@@ -10,6 +10,10 @@ public interface IncrementalModelEngine {
 	 * Name of the default classification queue on which regression listener will listen.
 	 */
 	String DEFAULT_CLASSIFICATION_QUEUE = "$DEF";
+	String CLASSIFIER_ATTRIB_TEXT = "text";
+	int CLASSIFIER_ATTRIB_TEXT_IDX = 0;
+	String CLASSIFIER_ATTRIB_CLASS = "class";
+	int CLASSIFIER_ATTRIB_CLASS_IDX = 1;
 	/**
 	 * Update and train model.
 	 * 

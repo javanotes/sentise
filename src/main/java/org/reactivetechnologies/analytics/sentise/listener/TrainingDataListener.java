@@ -142,7 +142,7 @@ public class TrainingDataListener extends AbstractQueueListener<TextData> {
 
 	@Override
 	public void init() {
-		LOG.info(domain+"| Started training data queue listener ..");
+		LOG.info(domain+"| Started training data receiver");
 	}
 
 	@Override

@@ -341,7 +341,7 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 				return t;
 			}
 		});
-		log.info("Model combiner initialized..");
+		log.info("Execution engine initialization complete");
 	}
 
 	private void notifyIfProcessing(String domain) {

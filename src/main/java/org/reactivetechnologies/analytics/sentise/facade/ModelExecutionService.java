@@ -17,6 +17,7 @@ package org.reactivetechnologies.analytics.sentise.facade;
 
 import org.reactivetechnologies.analytics.sentise.EngineException;
 import org.reactivetechnologies.analytics.sentise.dto.ClassifiedModel;
+import org.reactivetechnologies.analytics.sentise.dto.RequestData;
 
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -46,6 +47,12 @@ public interface ModelExecutionService {
 	 */
 	void buildClassifier(Instances data, String domain);
 	/**
+	 * Integration API to {@link #buildClassifier(Instances, String)}.
+	 * @param request
+	 * @throws EngineException 
+	 */
+	void buildClassifier(RequestData request) throws EngineException;
+	/**
 	 * Extension to {@link Classifier#classifyInstance(weka.core.Instances)}, to classify.
 	 * individual Instance.
 	 * @param instance
@@ -54,4 +61,11 @@ public interface ModelExecutionService {
 	 * @throws Exception
 	 */
 	double classifyInstance(Instance instance, String domain) throws Exception;
+	/**
+	 * Integration API to {@link #classifyInstance(Instance, String)}.
+	 * @param request
+	 * @return
+	 * @throws Exception
+	 */
+	String classifyInstance(RequestData request) throws Exception;
 }
