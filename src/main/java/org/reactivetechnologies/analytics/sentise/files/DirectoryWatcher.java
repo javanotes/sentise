@@ -44,6 +44,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import org.reactivetechnologies.analytics.sentise.core.CachedIncrementalClassifierBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanInitializationException;
@@ -67,9 +68,17 @@ public class DirectoryWatcher implements Runnable {
 	}
 
 	private WatchService watcher;
-
-	private void init() {
+	private ResourceLock fileLock;
+	
+	private void acquireWatchArea() throws IllegalAccessException, IOException
+	{
+		fileLock = new ResourceLock();
+		fileLock.lock(root.toFile(), CachedIncrementalClassifierBean.LOCK_FILE);
+	}
+	
+	private void initialize() throws IllegalAccessException, IOException {
 		
+		acquireWatchArea();
 		try 
 		{
 			watcher = root.getFileSystem().newWatchService();
@@ -86,8 +95,17 @@ public class DirectoryWatcher implements Runnable {
 	 */
 	public void start()
 	{
-		init();
-		new Thread(this, "DirectoryWatcher").start();
+		try 
+		{
+			initialize();
+			new Thread(this, "DirectoryWatcher").start();
+		} 
+		catch (IllegalAccessException e) {
+			log.warn("Trigger directory is already being watched by another process. Skipping for this instance ..");
+		} catch (IOException e) {
+			log.error("Exception while trying to acquire lock. Watch service is being skipped!", e);
+		}
+		
 	}
 	private Set<File> initialFiles = new HashSet<>();
 
@@ -164,11 +182,19 @@ public class DirectoryWatcher implements Runnable {
 	 */
 	public void stop() {
 		stopRequested = true;
-		try {
-			watcher.close();
-		} catch (IOException e) {
-			log.debug(e.getMessage());
+		if (watcher != null) {
+			try {
+				watcher.close();
+			} catch (IOException e) {
+				log.debug(e.getMessage());
+			} 
 		}
+		if(fileLock != null)
+			try {
+				fileLock.close();
+			} catch (IOException e) {
+				
+			}
 	}
 
 	private Set<File> filesFromEvents() throws InterruptedException {
