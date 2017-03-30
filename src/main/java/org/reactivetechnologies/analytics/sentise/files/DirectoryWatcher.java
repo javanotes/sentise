@@ -101,7 +101,7 @@ public class DirectoryWatcher implements Runnable {
 			new Thread(this, "DirectoryWatcher").start();
 		} 
 		catch (IllegalAccessException e) {
-			log.warn("Trigger directory is already being watched by another process. Skipping for this instance ..");
+			log.warn("Trigger directory is already being watched by another process. Skipping for this instance!");
 		} catch (IOException e) {
 			log.error("Exception while trying to acquire lock. Watch service is being skipped!", e);
 		}

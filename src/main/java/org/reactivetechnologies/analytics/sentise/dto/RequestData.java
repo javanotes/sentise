@@ -18,12 +18,20 @@ package org.reactivetechnologies.analytics.sentise.dto;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.facade.ModelExecutionService;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
@@ -38,7 +46,25 @@ import weka.core.Instances;
  *
  */
 public class RequestData implements DataSerializable {
+	
+	private static ObjectWriter jsonWriter;
+	private static ObjectReader jsonReader;
+	static
+	{
+		ObjectMapper OMAPPER = new ObjectMapper();
+		jsonWriter = OMAPPER.writerFor(RequestData.class).with(new DefaultPrettyPrinter());
+		jsonReader = OMAPPER.readerFor(RequestData.class);
+	}
 	public RequestData() {
+	}
+	public static String sampleJson()
+	{
+		RequestData rd = new RequestData();
+		rd.setClasses(Arrays.asList("neg", "pos"));
+		rd.setDomain("movie_review");
+		rd.setDataSet(Arrays.asList(new RequestData.Tuple("This is a good review", "pos"),
+				new RequestData.Tuple("This is a bad review", "neg")));
+		return rd.toString();
 	}
 	/**
 	 * RequestData with a single Tuple. To be used for invoking {@linkplain ModelExecutionService#classifyInstance(RequestData)}.
@@ -52,6 +78,28 @@ public class RequestData implements DataSerializable {
 		return makeInstance(struct, getDataSet().get(0));
 		
 	}
+	public String toString()
+	{
+		try {
+			return jsonWriter.writeValueAsString(this);
+		} catch (JsonProcessingException e) {
+			e.printStackTrace();
+		}
+		return "ERR";
+	}
+	/**
+	 * 
+	 * @param json
+	 * @return
+	 */
+	public static RequestData fromJson(String json)
+	{
+		try {
+			return jsonReader.readValue(json);
+		} catch (IOException e) {
+			throw new IllegalArgumentException(e);
+		}
+	}
 	/**
 	 * RequestData with a single Tuple. To be used for invoking {@linkplain ModelExecutionService#classifyInstance(RequestData)}. This constructor
 	 * is NOT supposed to be used with training data.
@@ -62,8 +110,9 @@ public class RequestData implements DataSerializable {
 	{
 		Assert.notEmpty(classes, "classes is empty or null");
 		this.classes.addAll(classes);
-		this.dataSet = Arrays.asList(new Tuple(text, null));
+		this.dataSet.addAll(Arrays.asList(new Tuple(text, null)));
 	}
+	@JsonIgnore
 	private Instances structure;
 	private void buildStructure()
 	{
@@ -134,8 +183,8 @@ public class RequestData implements DataSerializable {
 			this.textClass = textClass;
 		}
 
-		String text;
-		String textClass;
+		String text = "";
+		String textClass = "";
 
 		@Override
 		public void writeData(ObjectDataOutput out) throws IOException {
@@ -173,12 +222,12 @@ public class RequestData implements DataSerializable {
 	}
 
 	public void setDataSet(List<Tuple> dataSet) {
-		this.dataSet = dataSet;
+		this.dataSet.addAll(dataSet);
 	}
 
 	private String domain = IncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
 	private final List<String> classes = new ArrayList<>();
-	private List<Tuple> dataSet;
+	private final List<Tuple> dataSet = new LinkedList<>();
 
 	@Override
 	public void writeData(ObjectDataOutput out) throws IOException {
@@ -214,7 +263,6 @@ public class RequestData implements DataSerializable {
 
 		len = in.readInt();
 		if (len != -1) {
-			dataSet = new ArrayList<>(len);
 			Tuple r;
 			for (int i = 0; i < len; i++) {
 				r = new Tuple();

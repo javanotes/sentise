@@ -19,17 +19,19 @@ import javax.xml.transform.stream.StreamSource;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 
+import weka.classifiers.bayes.NaiveBayesMultinomialUpdateable;
 import weka.classifiers.bayes.NaiveBayesUpdateable;
 import weka.core.Instances;
 
 public class ConfigUtil {
 
 	private static com.thoughtworks.xstream.XStream XSTREAM;
-
+	
 	private static void initXStream() {
 		XSTREAM = new com.thoughtworks.xstream.XStream();
 		XSTREAM.alias(Instances.class.getName(), Instances.class);
 		XSTREAM.alias(NaiveBayesUpdateable.class.getName(), NaiveBayesUpdateable.class);
+		XSTREAM.alias(NaiveBayesMultinomialUpdateable.class.getName(), NaiveBayesMultinomialUpdateable.class);
 	}
 	/**
 	 * Resolve file from file system path or classpath.
@@ -90,12 +92,9 @@ public class ConfigUtil {
 	static {
 		initXStream();
 	}
-	public static final String WEKA_IN_MAP = "WEKAEVENT";
-	public static final String WEKA_MODEL_CACHE_MAP = "WEKAMODELCACHE";
-	public static final String WEKA_MODEL_SNAPSHOT_SET = "WEKAMODELSNAP";
-	public static final String WEKA_MODEL_PERSIST_MAP = "WEKAMODELENS";
-	public static final String WEKA_COMMUNICATION_TOPIC = "WEKAINTERCOMM";
-	public static final String WEKA_IN_BEAN_NAME = "Weka-Inbound";
+	
+	public static final String WEKA_MODEL_PERSIST_MAP = "WEKA_MODEL_ENS";
+	public static final String WEKA_COMMUNICATION_TOPIC = "WEKA_INTERCOMM";
 
 	/**
 	 * Formats a xml string

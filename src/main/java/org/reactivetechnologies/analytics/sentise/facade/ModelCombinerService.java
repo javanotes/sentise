@@ -19,7 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.reactivetechnologies.analytics.sentise.EngineException;
-import org.reactivetechnologies.analytics.sentise.dto.CombinerResult;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 /**
  * Service interface for fetching an ensemble classifier model.
@@ -41,16 +40,13 @@ public interface ModelCombinerService {
 	 * @return
 	 */
 	Future<RegressionModel> retrieveModel(String domain, ExecutorService thread);
-
+	
 	/**
-	 * Runs a cluster wide model collection, and generates a combined
-	 * (stacked/voted/evaluated) classifier model. The generated model is
-	 * persisted in database, only if it is different than the ones already
-	 * present.
-	 * 
-	 * @return Persisted model Id, or "" if not persisted in this run
-	 * @throws EngineException
-	 * @throws InterruptedException 
+	 * Return the locally built model, without creating an ensemble.
+	 * @param domain
+	 * @return 
+	 * @throws EngineException 
 	 */
-	CombinerResult combineModel(String domain) throws EngineException;
+	RegressionModel getLocalModel(String domain) throws EngineException;
+	
 }

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.reactivetechnologies.analytics.sentise.EngineException;
@@ -58,19 +59,10 @@ public class ClassifierServiceTest {
 			return ins;
 		}
 	}
-	@Test
+	@Before
 	public void setup() throws FileNotFoundException, IOException
 	{
 		Assert.assertNotNull(classifier);
-		Instances ins = readFile();
-		Assert.assertNotNull("No instances found", ins);
-		Assert.assertFalse("Instances is empty", ins.isEmpty());
-		
-	}
-	
-	@Test
-	public void testBuildClassifierWithInstances() throws Exception 
-	{
 		Instances ins = readFile();
 		Assert.assertNotNull("No instances found", ins);
 		Assert.assertFalse("Instances is empty", ins.isEmpty());
@@ -81,7 +73,12 @@ public class ClassifierServiceTest {
 			e.printStackTrace();
 			Assert.fail();
 		}
-		Thread.sleep(5000);
+	}
+	
+	@Test
+	public void testBuildClassifierWithInstances() throws Exception 
+	{
+		//Thread.sleep(5000);
 		System.err.println("gathering classifier now..........");
 		ClassifiedModel model = null;
 		try {
@@ -98,10 +95,7 @@ public class ClassifierServiceTest {
 	@Test
 	public void testClassifyUsingBuiltClassifier() throws Exception 
 	{
-		
 		testBuildClassifierWithInstances();
-
-		
 		Attribute attribute2 = new Attribute("class", Arrays.asList("neg", "pos"));
 		Attribute attribute1 = new Attribute("text", true);
 		
@@ -117,6 +111,15 @@ public class ClassifierServiceTest {
 		
 		double pred = classifier.classifyInstance(instances.instance(0), null);
 		System.err.println("Class predicted: " + instances.classAttribute().value((int) pred));
+	}
+	
+	@Test
+	public void testFetchLocalIncrementalClassifier() throws Exception 
+	{
+		ClassifiedModel model = classifier.getClassifier(null);
+		Assert.assertNotNull(model);
+		Assert.assertNotNull(model.model);
+		
 	}
 	
 	//@Test

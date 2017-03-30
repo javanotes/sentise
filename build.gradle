@@ -15,7 +15,7 @@ apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 
 jar {
-    baseName = 'ticker-tics'
+    baseName = 'sentics'
     version =  '0.1'
 }
 

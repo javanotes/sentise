@@ -98,7 +98,7 @@ public class ClassifierConfiguration {
 	
 	@Bean(name = CACHED_INCR_CLASSIFIER_BEAN)
 	@Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-	public AbstractIncrementalModelEngine getClassifier(String domain) throws Exception {
+	public AbstractIncrementalModelEngine getClassifier(/*@Value("${default.domain:"+AbstractIncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE+"}")*/ String domain) throws Exception {
 		Classifier c = null;
 		try {
 			c = AbstractClassifier.forName(wekaClassifier,

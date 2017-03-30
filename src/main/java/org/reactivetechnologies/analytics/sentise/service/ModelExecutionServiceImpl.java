@@ -15,9 +15,12 @@
  */
 package org.reactivetechnologies.analytics.sentise.service;
 
+import javax.annotation.PostConstruct;
+
 import org.reactivetechnologies.analytics.sentise.EngineException;
 import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.dto.ClassifiedModel;
+import org.reactivetechnologies.analytics.sentise.dto.CombinerResult;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.dto.RequestData;
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
@@ -41,24 +44,38 @@ public class ModelExecutionServiceImpl implements ModelExecutionService {
 	private Publisher publisher;
 	@Autowired
 	private ModelCombinerService combiner;
-	@Value("${weka.classifier.train.dataset.batchSize:100}")
+		
+	@Value("${weka.classifier.train.dataset.batch.size:100}")
 	private int maxDataLen;
-	
+	@Value("${weka.classifier.train.dataset.batch:false}")
+	private boolean batchEnabled;
 	private static final Logger log = LoggerFactory.getLogger(ModelExecutionServiceImpl.class);
 	
 	private static String getDomain(String domain)
 	{
 		return StringUtils.hasText(domain) ? domain : IncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
 	}
-	
-	@Override
-	public void buildClassifier(Instances data, String domain) {
-		WekaData[] wData = new WekaData(data).split(maxDataLen);
+	private void buildClassifierBatch(WekaData aData, String domain)
+	{
+		WekaData[] wData = aData.split(maxDataLen);
 		for (int i = 0; i < wData.length; i++) {
 			WekaData wekaData = wData[i];
 			wekaData.setDestination(getDomain(domain));
 			publisher.ingest(wekaData);
-			log.info(getDomain(domain)+"| Submitted training data chunk of size "+wekaData.instanceSize());
+			log.info(getDomain(domain) + "| Submitted training data chunk of size " + wekaData.instanceSize());
+		}
+	}
+	@Override
+	public void buildClassifier(Instances data, String domain) {
+		WekaData aData = new WekaData(data);
+		if (batchEnabled) {
+			buildClassifierBatch(aData, domain); 
+		}
+		else
+		{
+			aData.setDestination(getDomain(domain));
+			publisher.ingest(aData);
+			log.info(getDomain(domain) + "| Submitted training data of size " + aData.instanceSize());
 		}
 		
 	}
@@ -96,6 +113,20 @@ public class ModelExecutionServiceImpl implements ModelExecutionService {
 		} catch (Exception e) {
 			throw new EngineException(e);
 		}
+	}
+	
+	@PostConstruct
+	private void init()
+	{
+		if (log.isDebugEnabled()) {
+			log.debug("request json struct:\n" + RequestData.sampleJson());
+		}
+	}
+	@Override
+	public ClassifiedModel getClassifier(String domain) throws EngineException {
+		RegressionModel model = combiner.getLocalModel(getDomain(domain));
+		ClassifiedModel cm = new ClassifiedModel(CombinerResult.IGNORED, model.getTrainedClassifier());
+		return cm;
 	}
 
 }

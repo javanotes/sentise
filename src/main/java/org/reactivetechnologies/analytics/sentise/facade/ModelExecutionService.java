@@ -40,6 +40,15 @@ public interface ModelExecutionService {
 	 */
 	ClassifiedModel gatherClassifier(String domain) throws EngineException;
 	/**
+	 * Get the locally built (incrementally) classifier, without performing
+	 * any ensemble.
+	 * @return
+	 * @throws EngineException 
+	 * @see {@linkplain ClassifiedModel#writeModel(java.io.OutputStream)}
+	 * @see {@linkplain ClassifiedModel#readModel(java.io.InputStream)}
+	 */
+	ClassifiedModel getClassifier(String domain) throws EngineException;
+	/**
 	 * Extension to {@link Classifier#buildClassifier(weka.core.Instances)}, to build (scatter really).
 	 * individual Instance.
 	 * @param data

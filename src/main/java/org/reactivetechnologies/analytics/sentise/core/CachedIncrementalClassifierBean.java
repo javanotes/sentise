@@ -46,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import org.reactivetechnologies.analytics.sentise.OperationFailedUnexpectedly;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.files.ResourceLock;
+import org.reactivetechnologies.analytics.sentise.files.ResourceLockedException;
 import org.reactivetechnologies.ticker.utils.CommonHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,9 +97,11 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 
 	@Override
 	public RegressionModel generateModelSnapshot() {
-		dumpModelSnapshot();
+		if (modelUpdated.compareAndSet(true, false)) {
+			dumpModelSnapshot();
+		}
 		try {
-			return loadModel();
+			return loadModel(false);
 		} catch (IOException e) {
 			throw new OperationFailedUnexpectedly("Unable to load a cached model", e);
 		}
@@ -106,7 +109,9 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	/**
 	 * Dump the built model to some media. This is done to refer the cached
 	 * instance for performance improvement. This method is synchronized as there is a write operation involved, 
-	 * and the invocation can originate from client as well as the background thread.
+	 * and the invocation can originate from client as well as the background thread. Also this method will only
+	 * log any IOException caught. This is done so that the client invocations do not get any exception, since the
+	 * process should not break on failure at this point.
 	 */
 	private synchronized void dumpModelSnapshot() 
 	{
@@ -125,7 +130,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		try {
 			fileLock.lock(f, LOCK_FILE);
 		} catch (IllegalAccessException e) {
-			throw new IOException(
+			throw new ResourceLockedException(
 					"Cache path already in use by another process. Use a different 'weka.classifier.cache.path', or delete .lock file under ../_domains/ if no other process is running.");
 		}
 		
@@ -149,7 +154,8 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		log.debug(domain+"| Cached file path => "+filePath);
 	}
 	/**
-	 * Save the serialized model file. Can be overriden to provide a different caching media.
+	 * Save the serialized model file. Can be overriden to provide a different caching media. This method
+	 * is being invoked from a synchronized method.
 	 * @param b
 	 * @throws IOException
 	 */
@@ -195,7 +201,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		}
 	}
 	/**
-	 * The properties which will need to be sync'd with file system.
+	 * The properties which will need to be sync'd from file system.
 	 * @param model
 	 */
 	private void unmarshallBuildState(RegressionModel model)
@@ -210,12 +216,14 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	 * @return
 	 * @throws IOException
 	 */
-	private RegressionModel loadModel() throws IOException
+	private RegressionModel loadModel(boolean syncBuildState) throws IOException
 	{
 		byte[] b = loadBytes();
 		RegressionModel model = new RegressionModel();
 		utils.unmarshall(b, model);
-		unmarshallBuildState(model);		
+		if (syncBuildState) {
+			unmarshallBuildState(model);
+		}
 		if (log.isDebugEnabled()) {
 			log.debug("lastBuildAt " + lastBuildAt + "; attribsInitialized " + attribsInitialized);
 			log.debug("structure " + structure);
@@ -231,7 +239,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		{
 			try 
 			{
-				RegressionModel model = loadModel();
+				RegressionModel model = loadModel(true);
 				log.warn(domain+"| Detected cached classifier present. Last built on, "+new Date(model.getGeneratedOn())+". Any configured classifier will be overridden.");
 				log.debug(model.toXmlString());
 				return true;
@@ -256,10 +264,14 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 			
 			@Override
 			public void run() {
-				try {
-					dumpModelSnapshot();
-					log.info(domain+"| File sync task run successful..");
-				} catch (Exception e) {
+				try 
+				{
+					if (modelUpdated.compareAndSet(true, false)) {
+						dumpModelSnapshot();
+						log.info(domain + "| File sync task ran..");
+					}
+				} 
+				catch (Exception e) {
 					log.error("Exception in file sync task", e);
 				}
 			}

@@ -185,9 +185,17 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 	
 		return result;
 	}
-	
-	@Override
-	public CombinerResult combineModel(String domain) throws EngineException {
+	/**
+	 * Runs a cluster wide model collection, and generates a combined
+	 * (stacked/voted/evaluated) classifier model. The generated model is
+	 * persisted in database, only if it is different than the ones already
+	 * present.
+	 * 
+	 * @return Persisted model Id, or "" if not persisted in this run
+	 * @throws EngineException
+	 * @throws InterruptedException 
+	 */
+	private CombinerResult combineModel(String domain) throws EngineException {
 		log.info(domain+"| ensembleModel Task starting..");
 		ILock clusterLock = hzService.getClusterLock(domain);
 		try 
@@ -286,8 +294,11 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 		for (Iterator<RegressionModel> iterModel = modelSnapshots.iterator(); iterModel.hasNext();) 
 		{
 			RegressionModel model = iterModel.next();
-			models.add(model);
+			if(model.isAttribsInitialized())
+				models.add(model);
 		}
+		if(models.isEmpty())
+			throw new EngineException(domain+"| All models collected across cluster are uninitialized. At least 1 need to be initialized with training data");
 		try
 		{
 			String ensembleId = makeEnsemble(models, domain);
@@ -297,7 +308,7 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 			throw e;
 		} 
 		catch (DuplicateInstanceNameException e) {
-			throw new EngineException(domain+"| Ignoring model already present in database", e);
+			throw new EngineException(domain+"| Ignoring ensemble, as model already present in database", e);
 		}
 		finally
 		{
@@ -341,7 +352,7 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 				return t;
 			}
 		});
-		log.info("Execution engine initialization complete");
+		log.info("Execution engine initialization complete. Ensemble models will be saved to IMap "+ConfigUtil.WEKA_MODEL_PERSIST_MAP);
 	}
 
 	private void notifyIfProcessing(String domain) {
@@ -518,6 +529,16 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 				break;
 		}
 		
+	}
+	@Override
+	public RegressionModel getLocalModel(String domain) throws EngineException {
+		try {
+			assertDomain(domain);
+			RegressionModel model = classifierBeans.get(domain).generateModelSnapshot();
+			return model;
+		} catch (Exception e) {
+			throw new EngineException(e);
+		}
 	}
 
 	

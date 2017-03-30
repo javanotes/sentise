@@ -89,6 +89,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 			@Override
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r, "IncrClassifBuildThread-"+domain);
+				t.setDaemon(true);
 				return t;
 			}
 		});
@@ -98,6 +99,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		return false;
 	}
 	
+	protected final AtomicBoolean modelUpdated = new AtomicBoolean();
 	protected boolean isUpdateable() {
 		return clazzifier != null && (clazzifier instanceof UpdateableClassifier);
 	}
@@ -362,8 +364,12 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 			Instance i = e.nextElement();
 			i.setDataset(structure);
 			u.updateClassifier(i);
-			lastBuildAt = System.currentTimeMillis();
+			if(modelUpdated.compareAndSet(false, true)){
+				lastBuildAt = System.currentTimeMillis();
+			}
 		}
+		//this is a volatile variable. updating only once to reduce cost of cpu cache flushes.
+		lastBuildAt = System.currentTimeMillis();
 		log.info(domain+"| Classifier build updated..");
 	}
 	@Override
