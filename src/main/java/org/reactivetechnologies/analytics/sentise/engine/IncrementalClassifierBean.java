@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -42,11 +42,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
-import org.reactivetechnologies.analytics.sentise.OperationFailedUnexpectedly;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
-import org.reactivetechnologies.analytics.sentise.lucene.TextPreprocessor;
+import org.reactivetechnologies.analytics.sentise.engine.Preprocessor.ArgSwitch;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
+import org.reactivetechnologies.analytics.sentise.err.OperationFailedUnexpectedly;
 import org.reactivetechnologies.ticker.datagrid.HazelcastOperations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +57,7 @@ import org.springframework.util.Assert;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.classifiers.UpdateableClassifier;
+import weka.classifiers.bayes.NaiveBayesUpdateable;
 import weka.core.Attribute;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -121,7 +122,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	private boolean filterDataset;
 	@Value("${weka.classifier.tokenize.options:}")
 	private String filterOpts;
-	@Value("${weka.classifier.tokenize.useLucene:false}")
+	@Value("${weka.classifier.tokenize.useLucene:true}")
 	private boolean lucene;
 	@Value("${weka.classifier.request.backlog:1000}")
 	private int queueBacklog;
@@ -232,7 +233,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	private final class BuildClassifierTask implements Runnable {
 		private final AtomicBoolean acquiredMutex = new AtomicBoolean();
 		
-		private void build0() throws Exception
+		private void onBuild() throws Exception
 		{
 			try 
 			{
@@ -241,8 +242,22 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 					keepConsuming = false;
 				else
 					buildClassifier(ins);
-			} finally {
+			} 
+			finally {
 				acquiredMutex.compareAndSet(true, false);
+			}
+		}
+		
+		private void onPause() throws InterruptedException
+		{
+			log.warn("Try pause build on signal");
+			synchronized (acquiredMutex) {
+				if(!acquiredMutex.compareAndSet(false, true))
+				{
+					log.info("Pausing build task..");
+					acquiredMutex.wait();
+					log.info("Resumed build task..");
+				}
 			}
 		}
 		private void build()
@@ -251,25 +266,18 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 			{
 				if(acquiredMutex.compareAndSet(false, true))
 				{
-					build0();
+					onBuild();
 				}
 				else
 				{
-					synchronized (acquiredMutex) {
-						if(!acquiredMutex.compareAndSet(false, true))
-						{
-							log.info("Pausing build task..");
-							acquiredMutex.wait();
-							log.info("Resumed build task..");
-						}
-					}
+					onPause();
 					
 				}
 				
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			} catch (Exception e) {
-				log.error("", e);
+				log.error("Error caught in build thread", e);
 			}
 		}
 		private boolean pause()
@@ -335,7 +343,10 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	 */
 	protected Instances filterInstances(WekaData data) throws Exception {
 		if (filterDataset) {
-			return TextPreprocessor.filter(data.getInstances(), filterOpts, false, lucene);
+			ArgSwitch args = new ArgSwitch();
+			args.setUseLucene(lucene);
+			args.setUseNominalAttrib(clazzifier instanceof NaiveBayesUpdateable);
+			return Preprocessor.process(data.getInstances(), args);
 		}
 		return data.getInstances();
 	}
@@ -347,12 +358,15 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 
 	private BlockingQueue<Instances> instanceQ;
 	protected Instances structure;
-	
+	void setStructure(Instances data)
+	{
+		structure = getStructure(data);
+	}
 	private void initAttribs(Instances data) throws Exception
 	{
 		log.debug(data.toSummaryString());
 		log.debug(data.toString());
-		structure = getStructure(data);
+		setStructure(data);
 		clazzifier.buildClassifier(structure);
 		attribsInitialized = true;
 		
@@ -360,6 +374,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	}
 	private void updateClassifier(Instances data, UpdateableClassifier u) throws Exception
 	{
+		setStructure(data);
 		for (Enumeration<Instance> e = data.enumerateInstances(); e.hasMoreElements();) {
 			Instance i = e.nextElement();
 			i.setDataset(structure);
@@ -370,7 +385,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		}
 		//this is a volatile variable. updating only once to reduce cost of cpu cache flushes.
 		lastBuildAt = System.currentTimeMillis();
-		log.info(domain+"| Classifier build updated..");
+		log.info(domain+"| Classifier build updated. Attrib count: "+structure.numAttributes());
 	}
 	@Override
 	public void buildClassifier(Instances data) throws Exception {

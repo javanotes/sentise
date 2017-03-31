@@ -44,7 +44,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.reactivetechnologies.analytics.sentise.core.CachedIncrementalClassifierBean;
+import org.reactivetechnologies.analytics.sentise.engine.CachedIncrementalClassifierBean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanInitializationException;
@@ -72,8 +72,8 @@ public class DirectoryWatcher implements Runnable {
 	
 	private void acquireWatchArea() throws IllegalAccessException, IOException
 	{
-		fileLock = new ResourceLock();
-		fileLock.lock(root.toFile(), CachedIncrementalClassifierBean.LOCK_FILE);
+		fileLock = new ResourceLock(root.toFile(), CachedIncrementalClassifierBean.LOCK_FILE);
+		fileLock.lock();
 	}
 	
 	private void initialize() throws IllegalAccessException, IOException {

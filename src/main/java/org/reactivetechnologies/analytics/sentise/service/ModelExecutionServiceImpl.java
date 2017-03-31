@@ -17,13 +17,13 @@ package org.reactivetechnologies.analytics.sentise.service;
 
 import javax.annotation.PostConstruct;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
-import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.dto.ClassifiedModel;
 import org.reactivetechnologies.analytics.sentise.dto.CombinerResult;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.dto.RequestData;
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
+import org.reactivetechnologies.analytics.sentise.engine.IncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
 import org.reactivetechnologies.analytics.sentise.facade.ModelCombinerService;
 import org.reactivetechnologies.analytics.sentise.facade.ModelExecutionService;
 import org.reactivetechnologies.ticker.messaging.base.Publisher;

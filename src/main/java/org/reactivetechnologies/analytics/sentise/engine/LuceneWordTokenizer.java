@@ -26,8 +26,9 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.lucene;
+package org.reactivetechnologies.analytics.sentise.engine;
 
+import java.io.Closeable;
 import java.util.Iterator;
 
 import org.springframework.util.Assert;
@@ -38,7 +39,7 @@ import weka.core.tokenizers.WordTokenizer;
  * @author esutdal
  *
  */
-public class LuceneWordTokenizer extends WordTokenizer {
+class LuceneWordTokenizer extends WordTokenizer implements Closeable{
 	public LuceneWordTokenizer() {
 		this(false);
 	}
@@ -106,24 +107,36 @@ public class LuceneWordTokenizer extends WordTokenizer {
 	 * @param s
 	 *            the string to tokenize
 	 */
+	@Override
 	public void tokenize(String s) {
 		if (fallback) {
 			 super.tokenize(s);
 		}
 		else
 		{
-			try {
-				tokens = EnglishTextAnalyzer.getTokens(s).iterator();
-			} catch (Exception e) {
+			try 
+			{
+				analyzer = new EnglishTextAnalyzer(s);
+				analyzer.open();
+				tokens = analyzer;
+			} 
+			catch (Exception e) {
 				throw new UnsupportedOperationException("Failed to tokenize stream using Lucene", e);
 			}
 		}
 
 	}
 
+	private EnglishTextAnalyzer analyzer;
 	@Override
 	public String getRevision() {
 		return "n/a";
+	}
+
+	@Override
+	public void close()  {
+		if(analyzer != null)
+			analyzer.close();
 	}
 
 }

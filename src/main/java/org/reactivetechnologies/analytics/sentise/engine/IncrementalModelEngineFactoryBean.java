@@ -13,7 +13,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
  */
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import java.lang.reflect.Method;
 

@@ -35,9 +35,9 @@ import java.util.Arrays;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.reactivetechnologies.analytics.sentise.core.AbstractIncrementalModelEngine;
-import org.reactivetechnologies.analytics.sentise.core.CachedIncrementalClassifierBean;
 import org.reactivetechnologies.analytics.sentise.dto.CombinerResult;
+import org.reactivetechnologies.analytics.sentise.engine.AbstractIncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.engine.CachedIncrementalClassifierBean;
 import org.reactivetechnologies.ticker.messaging.actors.MessageContainerSupport;
 import org.reactivetechnologies.ticker.utils.ApplicationContextWrapper;
 import org.springframework.beans.factory.annotation.Autowired;

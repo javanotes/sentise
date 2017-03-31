@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.nio.charset.StandardCharsets;
 
-import org.reactivetechnologies.analytics.sentise.OperationFailedUnexpectedly;
+import org.reactivetechnologies.analytics.sentise.err.OperationFailedUnexpectedly;
 import org.reactivetechnologies.analytics.sentise.utils.ConfigUtil;
 import org.springframework.util.Assert;
 

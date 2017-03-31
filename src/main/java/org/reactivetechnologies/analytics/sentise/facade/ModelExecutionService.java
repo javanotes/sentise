@@ -15,9 +15,9 @@
  */
 package org.reactivetechnologies.analytics.sentise.facade;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
 import org.reactivetechnologies.analytics.sentise.dto.ClassifiedModel;
 import org.reactivetechnologies.analytics.sentise.dto.RequestData;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
 
 import weka.classifiers.Classifier;
 import weka.core.Instance;

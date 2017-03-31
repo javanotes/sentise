@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.reactivetechnologies.analytics.sentise.core.AbstractIncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.engine.AbstractIncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.facade.ModelExecutionService;
 import org.reactivetechnologies.analytics.sentise.files.DirectoryEventHandler;
 import org.reactivetechnologies.analytics.sentise.files.DirectoryWatcher;
@@ -245,7 +245,10 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 		}
 		else
 		{
-			log.warn("Ignoring file "+f+". Expecting the trigger file to have a '"+TRIGGER_FILE_EXTN+"' extension");
+			if (log.isDebugEnabled()) {
+				log.debug("Ignoring file " + f + ". Expecting the trigger file to have a '" + TRIGGER_FILE_EXTN
+						+ "' extension");
+			}
 		}
 
 	}
@@ -284,7 +287,7 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 				}
 				else
 				{
-					log.warn("Ignoring file "+f+". ");
+					log.debug("Ignoring file "+f+". ");
 				}
 			}
 		}

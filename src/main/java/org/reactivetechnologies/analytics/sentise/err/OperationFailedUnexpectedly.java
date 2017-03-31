@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: BaggingWithBuiltClassifiers.java
+* FILE: OperationFailedUnexpectedly.java
 *
 The MIT License (MIT)
 
@@ -26,20 +26,30 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.err;
 
-import weka.classifiers.Classifier;
-import weka.classifiers.meta.Bagging;
-
-class BaggingWithBuiltClassifiers extends Bagging {
+public class OperationFailedUnexpectedly extends RuntimeException {
 
   /**
    * 
    */
-  private static final long serialVersionUID = 1L;
-  
-  public BaggingWithBuiltClassifiers(Classifier[] classifiers) {
-    m_Classifiers = classifiers;
+  private static final long serialVersionUID = 7320029015826953200L;
+
+  public OperationFailedUnexpectedly() {
+    super();
   }
-  
+
+  public OperationFailedUnexpectedly(String message) {
+    super(message);
+  }
+
+  public OperationFailedUnexpectedly(Throwable cause) {
+    super(cause);
+  }
+
+  public OperationFailedUnexpectedly(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+
 }

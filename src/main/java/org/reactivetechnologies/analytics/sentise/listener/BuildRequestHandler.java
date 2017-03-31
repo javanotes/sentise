@@ -17,6 +17,8 @@ package org.reactivetechnologies.analytics.sentise.listener;
 
 import org.reactivetechnologies.analytics.sentise.dto.ClassifiedModel;
 import org.reactivetechnologies.analytics.sentise.dto.RequestData;
+import org.reactivetechnologies.analytics.sentise.dto.ResponseData;
+import org.reactivetechnologies.analytics.sentise.dto.ResponseData.Mode;
 import org.reactivetechnologies.analytics.sentise.facade.ModelExecutionService;
 import org.reactivetechnologies.analytics.sentise.utils.ConfigUtil;
 import org.reactivetechnologies.ticker.rest.AbstractRestHandler;
@@ -28,13 +30,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class ClassificationRequestHandler extends AbstractRestHandler {
+public class BuildRequestHandler extends AbstractRestHandler {
 
-	private static final Logger log = LoggerFactory.getLogger(ClassificationRequestHandler.class);
+	private static final Logger log = LoggerFactory.getLogger(BuildRequestHandler.class);
 	@Autowired
 	ModelExecutionService service;
 
-	static final String URL = "/classify/{domain}";
+	static final String URL = "/build/{domain}";
 	@Override
 	public String url() {
 		return URL;
@@ -45,19 +47,30 @@ public class ClassificationRequestHandler extends AbstractRestHandler {
 		RequestBody req = parse(request, response, "domain");
 		RequestData data = RequestData.fromJson(req.body);
 		data.setDomain(req.queue);
-		
 		service.buildClassifier(data);
+		response.setBody(new ResponseData());
+		response.setContentType("text/json");
+		response.setResponseCode(202);
 		log.info("Submitted request for build classifier: "+req.body);
 	}
 	@Override
 	protected void doGet(Request request, Response response) throws Exception {
 		String domain = request.getHeader("domain");
+		String mode = (String) request.getQueryStringMap().get("mode");
 		
-		ClassifiedModel model = service.getClassifier(domain);
-		response.setContentType("text/xml");
-		response.addHeader( "Content-Disposition", "filename=" + "model.xml" );
-		response.setBody(ConfigUtil.toPrettyXml(model.model));
-		response.setResponseCreated();
+		boolean isLocalMode = false;
+		if(mode != null)
+			isLocalMode = Mode.valueOf(mode.toUpperCase()) == Mode.LOCAL;
+		
+		ClassifiedModel model = isLocalMode ? service.getClassifier(domain) : service.gatherClassifier(domain);
+		response.setContentType("text/json");
+		ResponseData res = new ResponseData();
+		if(isLocalMode)
+			res.setModel(Mode.LOCAL);
+		
+		res.setMessage(ConfigUtil.toPrettyXml(model.model));
+		response.setBody(res);
+		response.setResponseCode(200);
 		
 		log.info("Fetched classifier for domain: "+domain);
 	}

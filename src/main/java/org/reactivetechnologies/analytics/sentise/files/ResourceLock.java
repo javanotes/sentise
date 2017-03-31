@@ -38,22 +38,29 @@ public class ResourceLock implements Closeable{
 
 	private FileChannel channel;
 	private volatile boolean locked;
+	private final File lockFile;
 	@Override
 	public void close() throws IOException {
 		if (channel != null) {
 			channel.close();
 		}
+		lockFile.delete();
+	}
+	/**
+	 * New instance for lock to be created in 'dir' with the given name.
+	 * @param dir
+	 * @param lockFileName
+	 */
+	public ResourceLock(File dir, String lockFileName) {
+		lockFile = new File(dir, lockFileName);
 	}
 	/**
 	 * Try to lock on a {@linkplain FileLock}, if not already locked by some other process/thread.
-	 * @param dir
-	 * @param lockFileName
-	 * @throws IllegalAccessException
-	 * @throws IOException
+	 * @throws IllegalAccessException if unable to acquire lock
+	 * @throws IOException if IO exception occurs
 	 */
-	public synchronized void lock(File dir, String lockFileName) throws IllegalAccessException, IOException 
+	public synchronized void lock() throws IllegalAccessException, IOException 
 	{
-		File lockFile = new File(dir, lockFileName);
 		if(!lockFile.createNewFile())
 		{
 			boolean alive = checkIfProcessAlive(lockFile);

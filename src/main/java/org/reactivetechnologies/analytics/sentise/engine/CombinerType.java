@@ -26,11 +26,12 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import java.io.IOException;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
+import org.reactivetechnologies.analytics.sentise.err.ModelMergeFailureException;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -54,13 +55,13 @@ public enum CombinerType {
 		public Classifier getEnsembleClassifier(Classifier[] classifiers, Instances instances, String optionStr)
 				throws EngineException {
 			Stacking s = new Stacking();
-			s.setClassifiers(classifiers);
-			if (StringUtils.hasText(optionStr)) {
-				try {
+			try {
+				s.setClassifiers(classifiers);
+				if (StringUtils.hasText(optionStr)) {
 					s.setOptions(Utils.splitOptions(optionStr));
-				} catch (Exception e) {
-					throw new EngineException(e);
 				}
+			} catch (Exception e) {
+				throw new ModelMergeFailureException(e);
 			}
 
 			return s;
@@ -72,13 +73,13 @@ public enum CombinerType {
 		public Classifier getEnsembleClassifier(Classifier[] classifiers, Instances instances, String optionStr)
 				throws EngineException {
 			Vote v = new Vote();
-			v.setClassifiers(classifiers);
-			if (StringUtils.hasText(optionStr)) {
-				try {
+			try {
+				v.setClassifiers(classifiers);
+				if (StringUtils.hasText(optionStr)) {
 					v.setOptions(Utils.splitOptions(optionStr));
-				} catch (Exception e) {
-					throw new EngineException(e);
 				}
+			} catch (Exception e) {
+				throw new ModelMergeFailureException(e);
 			}
 
 			return v;
@@ -109,7 +110,7 @@ public enum CombinerType {
 						bestFit = cl;
 					}
 				} catch (Exception e) {
-					throw new EngineException("Exception while evaluating model", e);
+					throw new ModelMergeFailureException("Exception while evaluating model", e);
 				}
 			}
 			return bestFit;

@@ -18,8 +18,8 @@ package org.reactivetechnologies.analytics.sentise.facade;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
 /**
  * Service interface for fetching an ensemble classifier model.
  * @author esutdal

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: OperationFailedUnexpectedly.java
+* FILE: AdaBoostM1WithBuiltClassifiers.java
 *
 The MIT License (MIT)
 
@@ -26,30 +26,20 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise;
+package org.reactivetechnologies.analytics.sentise.engine;
 
-public class OperationFailedUnexpectedly extends RuntimeException {
+import weka.classifiers.Classifier;
+import weka.classifiers.meta.AdaBoostM1;
 
+class AdaBoostM1WithBuiltClassifiers extends AdaBoostM1 {
+  
   /**
    * 
    */
-  private static final long serialVersionUID = 7320029015826953200L;
+  private static final long serialVersionUID = 1L;
 
-  public OperationFailedUnexpectedly() {
-    super();
+  AdaBoostM1WithBuiltClassifiers(Classifier[] classifiers) {
+    this.m_Classifiers = classifiers;
   }
-
-  public OperationFailedUnexpectedly(String message) {
-    super(message);
-  }
-
-  public OperationFailedUnexpectedly(Throwable cause) {
-    super(cause);
-  }
-
-  public OperationFailedUnexpectedly(String message, Throwable cause) {
-    super(message, cause);
-  }
-
 
 }

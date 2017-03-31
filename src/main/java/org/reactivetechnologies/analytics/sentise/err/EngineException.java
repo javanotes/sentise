@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: AdaBoostM1WithBuiltClassifiers.java
+* FILE: EngineException.java
 *
 The MIT License (MIT)
 
@@ -26,20 +26,30 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.err;
 
-import weka.classifiers.Classifier;
-import weka.classifiers.meta.AdaBoostM1;
+public class EngineException extends Exception {
 
-class AdaBoostM1WithBuiltClassifiers extends AdaBoostM1 {
-  
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
 
-  AdaBoostM1WithBuiltClassifiers(Classifier[] classifiers) {
-    this.m_Classifiers = classifiers;
+  public EngineException() {
+    super();
   }
+
+  public EngineException(String arg0) {
+    super(arg0);
+  }
+
+  public EngineException(Throwable arg0) {
+    super(arg0);
+  }
+
+  public EngineException(String arg0, Throwable arg1) {
+    super(arg0, arg1);
+  }
+
 
 }

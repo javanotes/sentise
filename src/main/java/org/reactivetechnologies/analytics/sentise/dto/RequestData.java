@@ -21,7 +21,7 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.engine.IncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.facade.ModelExecutionService;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;

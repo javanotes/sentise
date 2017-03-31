@@ -17,11 +17,13 @@
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.lucene;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -37,9 +39,11 @@ import org.apache.lucene.analysis.standard.ClassicFilter;
 import org.apache.lucene.analysis.standard.ClassicTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.reactivetechnologies.analytics.sentise.err.OperationFailedUnexpectedly;
+import org.springframework.util.Assert;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
-class EnglishTextAnalyzer extends Analyzer {
+class EnglishTextAnalyzer extends Analyzer implements Iterator<String>{
 
 	private final static Set<String> characters = new HashSet<>();
 	static {
@@ -49,21 +53,35 @@ class EnglishTextAnalyzer extends Analyzer {
 	}
 
 	private EnglishTextAnalyzer() {
+		super();
+	}
+	private String text;
+	private TokenStream stream;
+	EnglishTextAnalyzer(String text) {
+		this();
+		this.text = text;
+	}
+	private boolean opened;
+	public void open() throws IOException
+	{
+		stream = tokenStream(null, new StringReader(text));
+		stream.reset();
+		opened = true;
 	}
 
 	/**
 	 * 
 	 * @param analyzer
-	 * @param string
+	 * @param text
 	 * @return
 	 * @throws IOException
 	 */
-	public static Set<String> getTokens(String string) throws IOException {
+	public static Set<String> getTokens(String text) throws IOException {
 		Set<String> result = new HashSet<String>();
 		TokenStream stream = null;
 		Analyzer analyzer = new EnglishTextAnalyzer();
 		try {
-			stream = analyzer.tokenStream(null, new StringReader(string));
+			stream = analyzer.tokenStream(null, new StringReader(text));
 			stream.reset();
 			while (stream.incrementToken()) {
 				result.add(stream.getAttribute(CharTermAttribute.class).toString());
@@ -82,6 +100,20 @@ class EnglishTextAnalyzer extends Analyzer {
 	}
 
 	@Override
+	public void close()
+	{
+		if (stream != null) {
+			try {
+				stream.end();
+				stream.close();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		
+		super.close();
+	}
+	@Override
 	protected TokenStreamComponents createComponents(String fieldName) {
 		Tokenizer source = new ClassicTokenizer();
 		CharArraySet stopWords = CharArraySet.copy(characters);
@@ -95,6 +127,25 @@ class EnglishTextAnalyzer extends Analyzer {
 
 		return new TokenStreamComponents(source, filter);
 
+	}
+
+	@Override
+	public boolean hasNext() {
+		Assert.isTrue(opened, "TokenStream not opened!");
+		try {
+			return stream.incrementToken();
+		} catch (IOException e) {
+			throw new OperationFailedUnexpectedly(e);
+		}
+	}
+
+	@Override
+	public String next() {
+		try {
+			return stream.getAttribute(CharTermAttribute.class).toString();
+		} catch (NullPointerException e) {
+			throw new NoSuchElementException();
+		}
 	}
 
 }

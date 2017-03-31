@@ -1,4 +1,4 @@
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
 

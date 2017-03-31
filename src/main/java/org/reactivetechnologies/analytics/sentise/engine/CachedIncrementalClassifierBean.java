@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,7 +43,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivetechnologies.analytics.sentise.OperationFailedUnexpectedly;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.files.ResourceLock;
 import org.reactivetechnologies.analytics.sentise.files.ResourceLockedException;
@@ -103,7 +102,8 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		try {
 			return loadModel(false);
 		} catch (IOException e) {
-			throw new OperationFailedUnexpectedly("Unable to load a cached model", e);
+			log.warn("Unable to load a cached model! Will fetch transient. Ignoring error => "+ e);
+			return super.generateModelSnapshot();
 		}
 	}
 	/**
@@ -126,9 +126,9 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	private ResourceLock fileLock;
 	private void lockCacheArea(File f) throws IOException
 	{
-		fileLock = new ResourceLock();
+		fileLock = new ResourceLock(f, LOCK_FILE);
 		try {
-			fileLock.lock(f, LOCK_FILE);
+			fileLock.lock();
 		} catch (IllegalAccessException e) {
 			throw new ResourceLockedException(
 					"Cache path already in use by another process. Use a different 'weka.classifier.cache.path', or delete .lock file under ../_domains/ if no other process is running.");
@@ -270,6 +270,8 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 						dumpModelSnapshot();
 						log.info(domain + "| File sync task ran..");
 					}
+					else
+						log.debug(domain + "| No build detected for file sync");
 				} 
 				catch (Exception e) {
 					log.error("Exception in file sync task", e);

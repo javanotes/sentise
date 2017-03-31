@@ -1,10 +1,10 @@
-package org.reactivetechnologies.analytics.sentise.core;
+package org.reactivetechnologies.analytics.sentise.engine;
 
 import java.util.List;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
 
 import weka.classifiers.AbstractClassifier;
 import weka.core.Instances;

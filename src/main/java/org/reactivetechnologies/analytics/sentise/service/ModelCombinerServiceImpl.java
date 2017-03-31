@@ -50,13 +50,15 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
 import org.reactivetechnologies.analytics.sentise.ClassifierConfiguration;
-import org.reactivetechnologies.analytics.sentise.EngineException;
-import org.reactivetechnologies.analytics.sentise.core.AbstractIncrementalModelEngine;
-import org.reactivetechnologies.analytics.sentise.core.CombinerType;
-import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.dto.CombinerResult;
 import org.reactivetechnologies.analytics.sentise.dto.RegressionModel;
 import org.reactivetechnologies.analytics.sentise.dto.Signal;
+import org.reactivetechnologies.analytics.sentise.engine.AbstractIncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.engine.CombinerType;
+import org.reactivetechnologies.analytics.sentise.engine.IncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
+import org.reactivetechnologies.analytics.sentise.err.ModelNotFoundException;
+import org.reactivetechnologies.analytics.sentise.err.ModelNotInitializedException;
 import org.reactivetechnologies.analytics.sentise.facade.ModelCombinerService;
 import org.reactivetechnologies.analytics.sentise.listener.TrainingDataListener;
 import org.reactivetechnologies.analytics.sentise.utils.ConfigUtil;
@@ -287,7 +289,7 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 		ISet<RegressionModel> modelSnapshots = hzService.hazelcastInstance().getSet(domain);
 		if(modelSnapshots.isEmpty()){
 			log.error(domain+"| snapshot collection is empty! will throw exception");
-			throw new EngineException(domain+"| Model snapshots collected across cluster was empty!");
+			throw new ModelNotFoundException(domain+"| Model snapshots collected across cluster was empty!");
 		}
 		
 		List<RegressionModel> models = new LinkedList<>();
@@ -297,8 +299,11 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 			if(model.isAttribsInitialized())
 				models.add(model);
 		}
+		//clear the current snapshot
+		modelSnapshots.clear();
+		
 		if(models.isEmpty())
-			throw new EngineException(domain+"| All models collected across cluster are uninitialized. At least 1 need to be initialized with training data");
+			throw new ModelNotInitializedException(domain+"| All models collected across cluster are uninitialized. At least 1 need to be initialized with training data");
 		try
 		{
 			String ensembleId = makeEnsemble(models, domain);
@@ -310,13 +315,6 @@ public class ModelCombinerServiceImpl implements MessageListener<Signal>, ModelC
 		catch (DuplicateInstanceNameException e) {
 			throw new EngineException(domain+"| Ignoring ensemble, as model already present in database", e);
 		}
-		finally
-		{
-			//clear the current snapshot
-			modelSnapshots.clear();
-		}
-		
-		
 	}
 
 	@Autowired

@@ -1,6 +1,6 @@
 /* ============================================================================
 *
-* FILE: EngineException.java
+* FILE: BaggingWithBuiltClassifiers.java
 *
 The MIT License (MIT)
 
@@ -26,30 +26,20 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package org.reactivetechnologies.analytics.sentise;
+package org.reactivetechnologies.analytics.sentise.engine;
 
-public class EngineException extends Exception {
+import weka.classifiers.Classifier;
+import weka.classifiers.meta.Bagging;
+
+class BaggingWithBuiltClassifiers extends Bagging {
 
   /**
    * 
    */
   private static final long serialVersionUID = 1L;
-
-  public EngineException() {
-    super();
+  
+  public BaggingWithBuiltClassifiers(Classifier[] classifiers) {
+    m_Classifiers = classifiers;
   }
-
-  public EngineException(String arg0) {
-    super(arg0);
-  }
-
-  public EngineException(Throwable arg0) {
-    super(arg0);
-  }
-
-  public EngineException(String arg0, Throwable arg1) {
-    super(arg0, arg1);
-  }
-
-
+  
 }

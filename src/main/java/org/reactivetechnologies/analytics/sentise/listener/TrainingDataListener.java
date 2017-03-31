@@ -19,10 +19,10 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.reactivetechnologies.analytics.sentise.EngineException;
-import org.reactivetechnologies.analytics.sentise.core.AbstractIncrementalModelEngine;
-import org.reactivetechnologies.analytics.sentise.core.IncrementalModelEngine;
 import org.reactivetechnologies.analytics.sentise.dto.WekaData;
+import org.reactivetechnologies.analytics.sentise.engine.AbstractIncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.engine.IncrementalModelEngine;
+import org.reactivetechnologies.analytics.sentise.err.EngineException;
 import org.reactivetechnologies.ticker.messaging.base.AbstractQueueListener;
 import org.reactivetechnologies.ticker.messaging.base.QueueListener;
 import org.reactivetechnologies.ticker.messaging.data.TextData;
