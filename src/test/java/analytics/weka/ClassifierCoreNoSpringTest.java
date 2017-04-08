@@ -28,12 +28,12 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import org.reactivetechnologies.sentise.engine.weka.AbstractIncrementalModelEngine;
-import org.reactivetechnologies.sentise.engine.weka.Preprocessor;
-import org.reactivetechnologies.sentise.engine.weka.Preprocessor.ArgSwitch;
-import org.reactivetechnologies.sentise.engine.weka.dto.WekaData;
-import org.reactivetechnologies.sentise.engine.weka.dto.WekaRegressionModel;
-import org.reactivetechnologies.sentise.utils.ConfigUtil;
+import org.reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
+import org.reactivetechnologies.sentigrade.engine.weka.Preprocessor;
+import org.reactivetechnologies.sentigrade.engine.weka.Preprocessor.ArgSwitch;
+import org.reactivetechnologies.sentigrade.utils.ConfigUtil;
+import org.reactivetechnologies.sentigrade.weka.dto.WekaData;
+import org.reactivetechnologies.sentigrade.weka.dto.WekaRegressionModel;
 import org.springframework.util.ResourceUtils;
 
 import weka.classifiers.bayes.NaiveBayesUpdateable;
