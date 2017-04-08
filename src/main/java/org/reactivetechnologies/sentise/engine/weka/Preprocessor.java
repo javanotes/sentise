@@ -28,6 +28,7 @@ SOFTWARE.
 */
 package org.reactivetechnologies.sentise.engine.weka;
 
+import org.reactivetechnologies.sentise.nlp.LemmatizationStemmer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +36,7 @@ import weka.attributeSelection.InfoGainAttributeEval;
 import weka.attributeSelection.Ranker;
 import weka.core.Instances;
 import weka.core.Utils;
-import weka.core.stemmers.NullStemmer;
+import weka.core.tokenizers.NGramTokenizer;
 import weka.filters.Filter;
 import weka.filters.supervised.attribute.AttributeSelection;
 import weka.filters.unsupervised.attribute.NumericToNominal;
@@ -66,7 +67,14 @@ public class Preprocessor {
 		boolean useLucene = false;
 		boolean useFeatureSelect = true;
 		boolean useNominalAttrib = true;
+		boolean useLemmatizer = false;
 		
+		public boolean isUseLemmatizer() {
+			return useLemmatizer;
+		}
+		public void setUseLemmatizer(boolean useLemmatizer) {
+			this.useLemmatizer = useLemmatizer;
+		}
 		public boolean isUseNominalAttrib() {
 			return useNominalAttrib;
 		}
@@ -123,11 +131,22 @@ public class Preprocessor {
 				lucenTokens = new LuceneWordTokenizer();
 				strToWord.setTokenizer(lucenTokens);
 			}
+			else
+				strToWord.setTokenizer(new NGramTokenizer());
+			
 			final Instances struct = AbstractIncrementalModelEngine.getStructure(dataRaw);
 			
-			strToWord.setStemmer(new NullStemmer());// ignore any other stemmer
-			
+			if (args.useLemmatizer) {
+				strToWord.setStemmer(new LemmatizationStemmer());
+			}
+			else
+			{
+				if(lucenTokens != null)
+					lucenTokens.enableStemming(true);
+					
+			}
 			strToWord.setInputFormat(struct);
+			
 			Instances wordVector = Filter.useFilter(dataRaw, strToWord);
 			
 			

@@ -19,6 +19,8 @@ import javax.xml.transform.stream.StreamSource;
 import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 
+import moa.classifiers.functions.SPegasos;
+import moa.classifiers.trees.HoeffdingTree;
 import weka.classifiers.bayes.NaiveBayesMultinomialUpdateable;
 import weka.classifiers.bayes.NaiveBayesUpdateable;
 import weka.core.Instances;
@@ -32,6 +34,8 @@ public class ConfigUtil {
 		XSTREAM.alias(Instances.class.getName(), Instances.class);
 		XSTREAM.alias(NaiveBayesUpdateable.class.getName(), NaiveBayesUpdateable.class);
 		XSTREAM.alias(NaiveBayesMultinomialUpdateable.class.getName(), NaiveBayesMultinomialUpdateable.class);
+		XSTREAM.alias(HoeffdingTree.class.getName(), HoeffdingTree.class);
+		XSTREAM.alias(SPegasos.class.getName(), SPegasos.class);
 	}
 	/**
 	 * Resolve file from file system path or classpath.

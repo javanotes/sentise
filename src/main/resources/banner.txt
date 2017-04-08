@@ -3,5 +3,5 @@
 .-._} }| {__ | |\  |  | |  | |.-._} }| {__ 
 `----' `----'`-' `-'  `-'  `-'`----' `----'
 
-A Platform for Weka Sentiment Analysis
+A Platform for Weka based Text Classification
 -------------------------------------------

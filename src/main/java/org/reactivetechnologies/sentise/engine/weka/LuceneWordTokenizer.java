@@ -31,6 +31,7 @@ package org.reactivetechnologies.sentise.engine.weka;
 import java.io.Closeable;
 import java.util.Iterator;
 
+import org.reactivetechnologies.sentise.nlp.EnglishTextTokenizer;
 import org.springframework.util.Assert;
 
 import weka.core.tokenizers.WordTokenizer;
@@ -101,6 +102,15 @@ class LuceneWordTokenizer extends WordTokenizer implements Closeable{
 
 	private Iterator<String> tokens;
 
+	private boolean enableStemming;
+	public boolean isEnableStemming() {
+		return enableStemming;
+	}
+
+	public void enableStemming(boolean enableStemming) {
+		this.enableStemming = enableStemming;
+	}
+
 	/**
 	 * Sets the string to tokenize. Tokenization happens immediately.
 	 * 
@@ -116,7 +126,8 @@ class LuceneWordTokenizer extends WordTokenizer implements Closeable{
 		{
 			try 
 			{
-				analyzer = new EnglishTextAnalyzer(s);
+				analyzer = new EnglishTextTokenizer(s);
+				analyzer.setEnableStemming(enableStemming);
 				analyzer.open();
 				tokens = analyzer;
 			} 
@@ -127,7 +138,7 @@ class LuceneWordTokenizer extends WordTokenizer implements Closeable{
 
 	}
 
-	private EnglishTextAnalyzer analyzer;
+	private EnglishTextTokenizer analyzer;
 	@Override
 	public String getRevision() {
 		return "n/a";
