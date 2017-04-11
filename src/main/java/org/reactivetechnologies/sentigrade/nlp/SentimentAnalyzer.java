@@ -220,7 +220,7 @@ public class SentimentAnalyzer {
 	 */
 	public SentimentVector getSentiment(String text) {
 		Assert.isTrue(initialized, "Not initialized!");
-		LOG.debug("Analyzing text.. "+text);
+		LOG.info("Analyzing text > '"+text+"'");
 		return calculate(text);
 	}
 	private double calcPOSNoun(Tree parse) {
@@ -504,7 +504,7 @@ public class SentimentAnalyzer {
 		}
 		
 		sentiments.normalize();
-		LOG.debug("Analysis complete. Final Score: "+sentiments);
+		LOG.info("Analysis complete. Final Score: "+sentiments);
 		if(!done)
 			LOG.warn("Analyzer did not complete in stipulated amount of time!");
 		
@@ -569,17 +569,25 @@ public class SentimentAnalyzer {
 			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_NOUN), vector.getNounScore());
 			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_VERB), vector.getVerbScore());
 			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ALL), vector.getOverallScore());
-			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_CLASS_IDX), t.getTextClass());
+			if (t.getTextClass() != null) {
+				//not a test instance
+				i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_CLASS_IDX),
+						t.getTextClass());
+			}
 			return i;
 		}
 		@Override
 		public void run() {
-			Instance i = newWekaInstance();
-			try {
-				instanceQ.put(i);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-				Thread.currentThread().interrupt();
+			try 
+			{
+				Instance i = newWekaInstance();
+				try {
+					instanceQ.put(i);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+				}
+			} catch (Exception e) {
+				LOG.error("", e);
 			}
 		}
 		
@@ -596,7 +604,7 @@ public class SentimentAnalyzer {
 		private final BlockingQueue<Instance> instanceQ = new LinkedBlockingQueue<>();
 		public void submitInstance(Instances struct, Tuple t) {
 			builderThreads.submit(new BuildInstanceTask(struct, t, instanceQ));
-			setCount(getCount() + 1);
+			count++;
 		}
 		
 		public Instance pollInstance() throws InterruptedException {
@@ -607,9 +615,6 @@ public class SentimentAnalyzer {
 			return count;
 		}
 
-		private void setCount(int count) {
-			this.count = count;
-		}
 	}
 	
 

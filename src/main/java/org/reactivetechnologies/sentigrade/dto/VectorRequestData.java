@@ -75,6 +75,21 @@ public class VectorRequestData extends RequestData {
 		setDomain(data.getDomain());
 	}
 	
+	
+	@Override
+	protected Instance buildInstance(Instances struct, Tuple t)
+	{
+		BuildInstancesDelegate builder = analyzer.newInstancesBuilder();
+		builder.submitInstance(struct, t);
+		try {
+			return builder.pollInstance();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new OperationFailedUnexpectedly(e);
+		}
+		
+	}
+	
 	//injected through factory bean
 	SentimentAnalyzer analyzer;
 	private static final Logger log = LoggerFactory.getLogger(VectorRequestData.class);
