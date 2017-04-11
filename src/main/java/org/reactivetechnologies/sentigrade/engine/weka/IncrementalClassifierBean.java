@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.util.Assert;
 
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
@@ -120,8 +119,8 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 
 	private static final Logger log = LoggerFactory.getLogger(IncrementalClassifierBean.class);
 
-	@Value("${weka.classifier.tokenize:true}")
-	private boolean filterDataset;
+	/*@Value("${weka.classifier.tokenize:true}")
+	private boolean filterDataset;*/
 	@Value("${weka.classifier.tokenize.options:}")
 	private String filterOpts;
 	@Value("${weka.classifier.tokenize.useLucene:true}")
@@ -156,7 +155,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		onInitialization();
 		if (log.isDebugEnabled()) {
 			log.info(domain+"| ** Weka Classifier loaded [" + clazzifier.getClass()+ "] **");
-			log.debug("weka.classifier.tokenize? " + filterDataset);
+			//log.debug("weka.classifier.tokenize? " + filterDataset);
 			log.debug("weka.classifier.tokenize.options: " + filterOpts);
 			log.debug(clazzifier.toString());
 		}
@@ -175,7 +174,6 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	public IncrementalClassifierBean(Classifier c) 
 	{
 		//printIncrAlgoValid();
-		Assert.isInstanceOf(UpdateableClassifier.class, c, "Not an incremental classifier");
 		clazzifier = c;
 		
 	}
@@ -344,7 +342,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	 * @throws Exception
 	 */
 	protected Instances filterInstances(WekaData data) throws Exception {
-		if (filterDataset) {
+		if (data.isEnableFilter()) {
 			ArgSwitch args = new ArgSwitch();
 			args.setUseLucene(lucene);
 			args.setUseNominalAttrib(clazzifier instanceof NaiveBayesUpdateable);
@@ -364,31 +362,39 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	{
 		structure = getStructure(data);
 	}
-	private void initAttribs(Instances data) throws Exception
+	private synchronized void initAttribs(Instances data) throws Exception
 	{
-		log.debug(data.toSummaryString());
-		log.debug(data.toString());
-		setStructure(data);
-		clazzifier.buildClassifier(structure);
-		attribsInitialized = true;
-		
-		log.info(domain+"| Classifier attributes initialized..");
+		if (!attribsInitialized) {
+			log.debug(data.toSummaryString());
+			log.debug(data.toString());
+			setStructure(data);
+			clazzifier.buildClassifier(structure);
+			attribsInitialized = true;
+			log.info(domain + "| Classifier attributes initialized..");
+		}
 	}
-	private void updateClassifier(Instances data, UpdateableClassifier u) throws Exception
+	private void updateClassifier(Instances data) throws Exception
 	{
 		setStructure(data);
 		for (Enumeration<Instance> e = data.enumerateInstances(); e.hasMoreElements();) {
 			Instance i = e.nextElement();
-			i.setDataset(structure);
-			u.updateClassifier(i);
-			if(modelUpdated.compareAndSet(false, true)){
-				lastBuildAt = System.currentTimeMillis();
-			}
+			updateWithInstance(i);
 		}
 		//this is a volatile variable. updating only once to reduce cost of cpu cache flushes.
 		lastBuildAt = System.currentTimeMillis();
 		log.info(domain+"| Classifier build updated. Attrib count: "+structure.numAttributes());
 	}
+	
+	private synchronized void updateWithInstance(Instance i) throws Exception
+	{
+		i.setDataset(structure);
+		((UpdateableClassifier) clazzifier).updateClassifier(i);
+		if(modelUpdated.compareAndSet(false, true)){
+			lastBuildAt = System.currentTimeMillis();
+			log.info(domain+"| Classifier build incremented.");
+		}
+	}
+	
 	@Override
 	public void buildClassifier(Instances data) throws Exception {
 		if (isUpdateable()) 
@@ -397,10 +403,17 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 			{
 				initAttribs(data);
 			}
-			updateClassifier(data, (UpdateableClassifier) clazzifier);
+			updateClassifier(data);
 		} 
-		else//unreachable code
+		else
+		{
+			log.warn(classifierAlgorithm()+" is not incremental. Expecting a complete dataset for training.");
 			clazzifier.buildClassifier(data);
+			if(modelUpdated.compareAndSet(false, true)){
+				lastBuildAt = System.currentTimeMillis();
+			}
+			log.info(domain+"| Classifier build executed. Attrib count: "+structure.numAttributes());
+		}
 
 	}
 
@@ -489,6 +502,15 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	@Override
 	public Classifier classifierInstance() {
 		return clazzifier;
+	}
+
+	@Override
+	public void incrementModel(Instance nextInstance) throws Exception {
+		if(!attribsInitialized)
+		{
+			initAttribs(nextInstance.dataset());
+		}
+		updateWithInstance(nextInstance);
 	}
 
 }

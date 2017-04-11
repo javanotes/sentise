@@ -8,6 +8,7 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.concurrent.TimeUnit;
 
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Source;
@@ -100,6 +101,22 @@ public class ConfigUtil {
 	public static final String WEKA_MODEL_PERSIST_MAP = "WEKA_MODEL_ENS";
 	public static final String WEKA_COMMUNICATION_TOPIC = "WEKA_INTERCOMM";
 
+	public static String toTimeElapsedString(long duration)
+	{
+		StringBuilder s = new StringBuilder();
+		long t = TimeUnit.MILLISECONDS.toMinutes(duration);
+		s.append(t).append(" min ");
+		duration -= TimeUnit.MINUTES.toMillis(t);
+		t = TimeUnit.MILLISECONDS.toSeconds(duration);
+		s.append(t).append(" sec ");
+		duration -= TimeUnit.SECONDS.toMillis(t);
+		s.append(duration).append(" ms");
+		return s.toString();
+		
+	}
+	public static void main(String[] args) {
+		System.out.println(toTimeElapsedString(61101));
+	}
 	/**
 	 * Formats a xml string
 	 * 

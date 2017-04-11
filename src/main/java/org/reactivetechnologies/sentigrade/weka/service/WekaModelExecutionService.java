@@ -20,6 +20,8 @@ import javax.annotation.PostConstruct;
 import org.reactivetechnologies.sentigrade.dto.ClassifiedModel;
 import org.reactivetechnologies.sentigrade.dto.CombinerResult;
 import org.reactivetechnologies.sentigrade.dto.RequestData;
+import org.reactivetechnologies.sentigrade.dto.VectorRequestData;
+import org.reactivetechnologies.sentigrade.dto.VectorRequestDataFactoryBean;
 import org.reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
 import org.reactivetechnologies.sentigrade.err.EngineException;
 import org.reactivetechnologies.sentigrade.services.ModelCombinerService;
@@ -32,7 +34,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import weka.classifiers.Classifier;
 import weka.core.Instance;
@@ -45,16 +46,18 @@ public class WekaModelExecutionService implements ModelExecutionService {
 	private Publisher publisher;
 	@Autowired
 	private ModelCombinerService combiner;
-		
+	@Autowired
+	private VectorRequestDataFactoryBean dataFactory;
+	
 	@Value("${weka.classifier.train.dataset.batch.size:100}")
 	private int maxDataLen;
 	@Value("${weka.classifier.train.dataset.batch:false}")
 	private boolean batchEnabled;
 	private static final Logger log = LoggerFactory.getLogger(WekaModelExecutionService.class);
 	
-	private static String getDomain(String domain)
+	public static String getDomain(String domain)
 	{
-		return StringUtils.hasText(domain) ? domain : IncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
+		return IncrementalModelEngine.getDomain(domain);
 	}
 	private void buildClassifierBatch(WekaData aData, String domain)
 	{
@@ -66,8 +69,10 @@ public class WekaModelExecutionService implements ModelExecutionService {
 			log.info(getDomain(domain) + "| Submitted training data chunk of size " + wekaData.instanceSize());
 		}
 	}
-	public void buildClassifier(Instances data, String domain) {
+	
+	private void buildClassifier(Instances data, String domain, boolean enableFilter) throws Exception {
 		WekaData aData = new WekaData(data);
+		aData.setEnableFilter(enableFilter);
 		if (batchEnabled) {
 			buildClassifierBatch(aData, domain); 
 		}
@@ -95,20 +100,39 @@ public class WekaModelExecutionService implements ModelExecutionService {
 	public void buildClassifier(RequestData request) throws EngineException {
 		try 
 		{
-			Instances ins = request.toInstances();
-			buildClassifier(ins, request.getDomain());
+			if(request instanceof VectorRequestData)
+			{
+				combiner.buildVectorModel((VectorRequestData) request);
+			}
+			else
+			{
+				buildClassifier(request.toInstances(), request.getDomain(), true);
+			}
 		} 
 		catch (Exception e) {
 			throw new EngineException(e);
 		}
 		
 	}
+	
+	private Instance parseTestRequest(RequestData request) throws Exception
+	{
+		if(request.isUseSentimentVector() && !(request instanceof VectorRequestData))
+		{
+			VectorRequestData data = dataFactory.getObject();
+			data.setTuples(request);
+			return data.toInstance();
+		}
+		else
+			return request.toInstance();
+	}
 	@Override
 	public String classifyInstance(RequestData request) throws Exception {
 		try 
 		{
-			Instance ins = request.toInstance();
+			Instance ins = parseTestRequest(request);
 			double d = classifyInstance(ins, request.getDomain());
+			
 			return request.getStructure().classAttribute().value((int) d);
 		} catch (Exception e) {
 			throw new EngineException(e);

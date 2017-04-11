@@ -46,7 +46,6 @@ import org.reactivetechnologies.sentigrade.err.EngineException;
 import org.reactivetechnologies.sentigrade.err.OperationFailedUnexpectedly;
 import org.reactivetechnologies.sentigrade.moa.dto.MoaData;
 import org.reactivetechnologies.sentigrade.moa.dto.MoaRegressionModel;
-import org.reactivetechnologies.sentigrade.weka.dto.WekaData;
 import org.reactivetechnologies.ticker.datagrid.HazelcastOperations;
 import org.reactivetechnologies.ticker.messaging.Data;
 import org.slf4j.Logger;
@@ -64,6 +63,8 @@ import moa.core.Utils;
 /**
  * A extension of Weka updateable classifier.
  *  @see http://wiki.pentaho.com/display/DATAMINING/Handling+Large+Data+Sets+with+Weka
+ *  
+ *  @deprecated WIP
  */
 
 class IncrementalClassifierBean extends AbstractMOAModelEngine {
@@ -337,17 +338,13 @@ class IncrementalClassifierBean extends AbstractMOAModelEngine {
 		return data.getInstances();
 	*/}
 	protected boolean attribsInitialized;
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
-
 	private BlockingQueue<Instances> instanceQ;
 	protected Instances structure;
 	void setStructure(Instances data)
 	{
 		//structure = getStructure(data);
 	}
+	@SuppressWarnings("unused")
 	private void initAttribs(Instances data) throws Exception
 	{/*
 		log.debug(data.toString());
@@ -357,6 +354,7 @@ class IncrementalClassifierBean extends AbstractMOAModelEngine {
 		
 		log.info(domain+"| Classifier attributes initialized..");
 	*/}
+	@SuppressWarnings("unused")
 	private void updateClassifier(Instances data) throws Exception
 	{/*
 		setStructure(data);
@@ -459,6 +457,12 @@ class IncrementalClassifierBean extends AbstractMOAModelEngine {
 	@Override
 	public Classifier classifierInstance() {
 		return clazzifier;
+	}
+
+	@Override
+	public void incrementModel(weka.core.Instance nextInstance) throws Exception {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 import org.reactivetechnologies.sentigrade.Sentise;
 import org.reactivetechnologies.sentigrade.dto.ClassifiedModel;
 import org.reactivetechnologies.sentigrade.err.EngineException;
+import org.reactivetechnologies.sentigrade.weka.handlers.TrainingDirectoryLoaderHandler;
 import org.reactivetechnologies.sentigrade.weka.service.WekaModelExecutionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -49,7 +50,8 @@ public class ClassifierServiceTest {
 
 	@Autowired
 	WekaModelExecutionService classifier;
-	
+	@Autowired
+	TrainingDirectoryLoaderHandler dirService;
 	private Instances readFile() throws FileNotFoundException, IOException
 	{
 		try(BufferedReader br = new BufferedReader(new FileReader(ResourceUtils.getFile("classpath:tokens.arff") )))
@@ -66,9 +68,8 @@ public class ClassifierServiceTest {
 		Instances ins = readFile();
 		Assert.assertNotNull("No instances found", ins);
 		Assert.assertFalse("Instances is empty", ins.isEmpty());
-		
 		try {
-			classifier.buildClassifier(ins, null);
+			dirService.submitTrainingData(ins, null);
 		} catch (Exception e) {
 			e.printStackTrace();
 			Assert.fail();

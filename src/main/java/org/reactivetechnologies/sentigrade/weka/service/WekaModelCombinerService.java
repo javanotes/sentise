@@ -53,16 +53,18 @@ import org.reactivetechnologies.sentigrade.WekaConfiguration;
 import org.reactivetechnologies.sentigrade.dto.CombinerResult;
 import org.reactivetechnologies.sentigrade.dto.RegressionModel;
 import org.reactivetechnologies.sentigrade.dto.Signal;
+import org.reactivetechnologies.sentigrade.dto.VectorRequestData;
 import org.reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
 import org.reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
 import org.reactivetechnologies.sentigrade.engine.weka.CombinerType;
 import org.reactivetechnologies.sentigrade.err.EngineException;
 import org.reactivetechnologies.sentigrade.err.ModelNotFoundException;
 import org.reactivetechnologies.sentigrade.err.ModelNotInitializedException;
+import org.reactivetechnologies.sentigrade.nlp.SentimentAnalyzer.BuildInstancesDelegate;
 import org.reactivetechnologies.sentigrade.services.ModelCombinerService;
 import org.reactivetechnologies.sentigrade.utils.ConfigUtil;
 import org.reactivetechnologies.sentigrade.weka.dto.WekaRegressionModel;
-import org.reactivetechnologies.sentigrade.weka.handlers.TrainingDataListener;
+import org.reactivetechnologies.sentigrade.weka.handlers.TrainingDataListenerHandler;
 import org.reactivetechnologies.ticker.datagrid.HazelcastOperations;
 import org.reactivetechnologies.ticker.messaging.actors.MessageContainerSupport;
 import org.reactivetechnologies.ticker.messaging.data.ext.TimeUIDMapData;
@@ -87,6 +89,7 @@ import com.hazelcast.core.Message;
 import com.hazelcast.core.MessageListener;
 
 import weka.classifiers.Classifier;
+import weka.core.Instance;
 
 
 /**
@@ -127,7 +130,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	
 	private void registerListener(IncrementalModelEngine<Classifier> eng, String domain)
 	{
-		TrainingDataListener listener = new TrainingDataListener(eng);
+		TrainingDataListenerHandler listener = new TrainingDataListenerHandler(eng);
 		listener.setDomain(domain);
 		msgContainer.registerListener(listener);
 	}
@@ -543,6 +546,38 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 		} catch (Exception e) {
 			throw new EngineException(e);
 		}
+	}
+	@Override
+	public void buildVectorModel(VectorRequestData data) throws EngineException {
+		if(!classifierBeans.containsKey(data.getDomain()))
+			throw new EngineException("Invalid domain specified- "+data.getDomain());
+		
+		BuildInstancesDelegate bld = data.toInstancesAsync();
+		Instance ins = null;
+		int tenPct = bld.getCount() / 10;
+		log.info(data.getDomain()+"| Starting analysis and build. This may take some time..");
+		long start = System.currentTimeMillis();
+		for(int i=0; i<bld.getCount(); i++)
+		{
+			try 
+			{
+				ins = bld.pollInstance();
+				if ((i+1) % tenPct == 0) {
+					log.info(data.getDomain()+"| Analyzed instance " + (i + 1) + " of " + bld.getCount());
+				}
+				classifierBeans.get(data.getDomain()).incrementModel(ins);
+			} 
+			catch (InterruptedException e1) {
+				Thread.currentThread().interrupt();
+				e1.printStackTrace();
+			}
+			catch (Exception e) {
+				throw new EngineException(data.getDomain()+"| Exception while training model", e);
+			}
+			
+		}
+		long end = System.currentTimeMillis();
+		log.info(data.getDomain()+"| End model build. Time taken: "+ConfigUtil.toTimeElapsedString((end-start)));
 	}
 
 	

@@ -23,6 +23,7 @@ import moa.classifiers.Classifier;
  * Base class to derive Weka incremental classifiers.
  * @author esutdal
  *
+ *@deprecated WIP
  */
 public abstract class AbstractMOAModelEngine implements IncrementalModelEngine<Classifier> {
 

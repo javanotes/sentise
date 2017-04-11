@@ -75,7 +75,7 @@ public class RequestData implements DataSerializable {
 		Assert.notEmpty(getDataSet(), "'dataSet' is empty or null");
 		Instances struct = getStructure();
 		
-		return makeInstance(struct, getDataSet().get(0));
+		return buildInstance(struct, getDataSet().get(0));
 		
 	}
 	public String toString()
@@ -108,13 +108,25 @@ public class RequestData implements DataSerializable {
 	 */
 	public RequestData(String text, List<String> classes)
 	{
+		setTuple(text, classes);
+	}
+	public void setTuple(String text, List<String> classes)
+	{
 		Assert.notEmpty(classes, "classes is empty or null");
 		this.classes.addAll(classes);
 		this.dataSet.addAll(Arrays.asList(new Tuple(text, null)));
 	}
+	public void setTuple(RequestData d)
+	{
+		setTuple(d.dataSet.isEmpty() ? "" : d.dataSet.get(0).text, d.classes);
+		setDomain(d.domain);
+	}
 	@JsonIgnore
-	private Instances structure;
-	private void buildStructure()
+	protected Instances structure;
+	/**
+	 * 
+	 */
+	protected void buildStructure()
 	{
 		Assert.notEmpty(getClasses(), "'class' is empty or null");
 		Attribute attr0 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT, (List<String>) null, IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX);
@@ -129,12 +141,18 @@ public class RequestData implements DataSerializable {
 		}
 		return structure;
 	}
-	private static Instance makeInstance(Instances data, Tuple t)
+	/**
+	 * 
+	 * @param struct
+	 * @param t
+	 * @return
+	 */
+	protected Instance buildInstance(Instances struct, Tuple t)
 	{
 		Instance i = new DenseInstance(2);
-		i.setDataset(data);
-		i.setValue(data.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX), t.getText());
-		i.setValue(data.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_CLASS_IDX), t.getTextClass());
+		i.setDataset(struct);
+		i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX), t.getText());
+		i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_CLASS_IDX), t.getTextClass());
 		return i;
 	}
 	/**
@@ -150,7 +168,7 @@ public class RequestData implements DataSerializable {
 			if (StringUtils.isEmpty(t.textClass) || t.text == null)
 				continue;
 
-			i = makeInstance(data, t);
+			i = buildInstance(data, t);
 			
 			data.add(i);
 		}
@@ -225,6 +243,13 @@ public class RequestData implements DataSerializable {
 		this.dataSet.addAll(dataSet);
 	}
 
+	private boolean useSentimentVector = true;
+	public boolean isUseSentimentVector() {
+		return useSentimentVector;
+	}
+	public void setUseSentimentVector(boolean useSentimentVector) {
+		this.useSentimentVector = useSentimentVector;
+	}
 	private String domain = IncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
 	private final List<String> classes = new ArrayList<>();
 	private final List<Tuple> dataSet = new LinkedList<>();
@@ -232,6 +257,7 @@ public class RequestData implements DataSerializable {
 	@Override
 	public void writeData(ObjectDataOutput out) throws IOException {
 		out.writeUTF(domain);
+		out.writeBoolean(useSentimentVector);
 		if (classes != null) {
 			out.writeInt(classes.size());
 			if (!classes.isEmpty()) {
@@ -254,6 +280,7 @@ public class RequestData implements DataSerializable {
 	@Override
 	public void readData(ObjectDataInput in) throws IOException {
 		setDomain(in.readUTF());
+		setUseSentimentVector(in.readBoolean());
 		int len = in.readInt();
 		if (len != -1) {
 			for (int i = 0; i < len; i++) {

@@ -42,15 +42,15 @@ import weka.core.converters.JSONLoader;
  * @author esutdal
  *
  */
-public class TrainingDataListener extends AbstractQueueListener<TextData> {
+public class TrainingDataListenerHandler extends AbstractQueueListener<TextData> {
 
-	public TrainingDataListener(IncrementalModelEngine<Classifier> engine) {
+	public TrainingDataListenerHandler(IncrementalModelEngine<Classifier> engine) {
 		super();
 		this.engine = engine;
 	}
 
 	private final IncrementalModelEngine<Classifier> engine;
-	protected static final Logger LOG = LoggerFactory.getLogger(TrainingDataListener.class);
+	protected static final Logger LOG = LoggerFactory.getLogger(TrainingDataListenerHandler.class);
 	
 	private String domain = AbstractIncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
 	@Override

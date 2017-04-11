@@ -19,7 +19,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.reactivetechnologies.sentigrade.dto.RegressionModel;
+import org.reactivetechnologies.sentigrade.dto.VectorRequestData;
 import org.reactivetechnologies.sentigrade.err.EngineException;
+import org.reactivetechnologies.sentigrade.nlp.SentimentVector;
 /**
  * Service interface for fetching an ensemble classifier model.
  * @author esutdal
@@ -48,5 +50,13 @@ public interface ModelCombinerService {
 	 * @throws EngineException 
 	 */
 	RegressionModel getLocalModel(String domain) throws EngineException;
+	
+	/**
+	 * Build a non-incremental classifier, based on a {@linkplain SentimentVector} based model. This model will be built locally
+	 * and the instance will not be distributed.
+	 * @param data
+	 * @throws EngineException 
+	 */
+	void buildVectorModel(VectorRequestData data) throws EngineException;
 	
 }

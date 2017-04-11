@@ -57,13 +57,13 @@ public class SentimentVector {
 	public void setNounScore(double nounScore) {
 		this.nounScore = nounScore;
 	}
-	double overallScore = 0.0;
-	double adjScore = 0.0;//JJ,JJR, JJS
-	double advScore = 0.0;//RB,RBR,RBS
-	double conjScore = 0.0;//CC
-	double modvScore = 0.0;//MD (maybe, might, should..)
-	double nounScore = 0.0;
-	double verbScore = 0.0;
+	protected double overallScore = 0.0;
+	protected double adjScore = 0.0;//JJ,JJR, JJS
+	protected double advScore = 0.0;//RB,RBR,RBS
+	protected double conjScore = 0.0;//CC
+	protected double modvScore = 0.0;//MD (maybe, might, should..)
+	protected double nounScore = 0.0;
+	protected double verbScore = 0.0;
 	public double getVerbScore() {
 		return verbScore;
 	}

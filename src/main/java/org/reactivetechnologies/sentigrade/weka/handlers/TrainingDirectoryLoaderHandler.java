@@ -20,10 +20,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermission;
-import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -35,11 +35,14 @@ import java.util.concurrent.TimeUnit;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
+import org.reactivetechnologies.sentigrade.dto.VectorRequestData;
+import org.reactivetechnologies.sentigrade.dto.VectorRequestDataFactoryBean;
+import org.reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
 import org.reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
 import org.reactivetechnologies.sentigrade.files.DirectoryEventHandler;
 import org.reactivetechnologies.sentigrade.files.DirectoryWatcher;
+import org.reactivetechnologies.sentigrade.services.ModelExecutionService;
 import org.reactivetechnologies.sentigrade.utils.ConfigUtil;
-import org.reactivetechnologies.sentigrade.weka.service.WekaModelExecutionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,9 +52,9 @@ import org.springframework.util.StringUtils;
 
 import weka.core.Instances;
 @Service
-public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
+public class TrainingDirectoryLoaderHandler implements DirectoryEventHandler {
 
-	private static final Logger log = LoggerFactory.getLogger(TrainingDirectoryLoaderService.class);
+	private static final Logger log = LoggerFactory.getLogger(TrainingDirectoryLoaderHandler.class);
 	public static final String TRIGGER_FILE_EXTN = "train";
 	public static final String TRIGGER_FILE_PROC_EXTN = "proc";
 	
@@ -62,7 +65,7 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 	@Value("${weka.classifier.train.jobq.len:100}")
 	private int queueLen;
 	@Autowired
-	private WekaModelExecutionService classifService;
+	private ModelExecutionService classifService;
 	private ConcurrentLinkedQueue<File> backLog = new ConcurrentLinkedQueue<>();
 	private boolean keepRunning;
 	private ExecutorService workers, dirReaderPool;
@@ -72,33 +75,60 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 	private int readerThreads;
 	@Value("${weka.classifier.train.fileio.maxAwaitMins:10}")
 	private long maxAwait;
-	
+	@Autowired
+	private VectorRequestDataFactoryBean dataFactory;
+	/**
+	 * This is an internal API. Kept public just for a quick testing purpose.
+	 * Submit a new training dataset.
+	 * @param i
+	 * @throws Exception 
+	 */
+	public void submitTrainingData(Instances i, String domain) throws Exception
+	{
+		VectorRequestData data = dataFactory.getObject();
+		data.setTextInstances(i, IncrementalModelEngine.getDomain(domain));
+		classifService.buildClassifier(data);
+	}
 	private class LoaderTask implements Runnable
 	{
-		private void executeLoad(File f) {
+		private ConcurrentTextDirectoryLoader newLoader(String dir) throws FileNotFoundException, IOException
+		{
+			ConcurrentTextDirectoryLoader loader = new ConcurrentTextDirectoryLoader();
+			loader.setMaxAwaitDuration(maxAwait);
+			loader.setMaxAwaitUnit(TimeUnit.MINUTES);
+			loader.setReaderThreads(readerThreads > 0 ? readerThreads : Runtime.getRuntime().availableProcessors());
+			loader.setDirectory(ConfigUtil.resolvePath(dir));
+			
+			return loader;
+		}
+		private void loadAsWekaDirLoader(String domain, String dir) throws Exception
+		{
+			ConcurrentTextDirectoryLoader loader = newLoader(dir);
+			//Instances ins = loader.getDataSet(dirReaderPool, true);
+			Instances ins = loader.getDataSet();//single reader thread
+			
+			submitTrainingData(ins, domain);
+		}
+		private void executeLoad(File f) 
+		{
 			try 
 			{
 				TriggerFile trigger = readTriggerFile(f.toPath());
 				String dir = trigger.targetDir;
 				String domain = trigger.domain;
 				
-				log.info("-- START LOADER JOB --");
+				log.info("Begin training data loading ..");
 				log.info(domain+"| Root dir -> "+dir);
 				Path p = ConfigUtil.renameFileExtn(f, TRIGGER_FILE_PROC_EXTN);
 				
-				ConcurrentTextDirectoryLoader loader = new ConcurrentTextDirectoryLoader();
-				loader.setMaxAwaitDuration(maxAwait);
-				loader.setMaxAwaitUnit(TimeUnit.MINUTES);
-				loader.setReaderThreads(readerThreads > 0 ? readerThreads : Runtime.getRuntime().availableProcessors());
-				loader.setDirectory(ConfigUtil.resolvePath(dir));
-				
-				//Instances ins = loader.getDataSet(dirReaderPool, false);
-				Instances ins = loader.getDataSet();
-				
-				classifService.buildClassifier(ins, domain);
+				if (trigger.isTabbedLineDataset) {
+					loadAsTabDelimitedText(domain, dir, trigger.tabFormat);
+				}
+				else
+					loadAsWekaDirLoader(domain, dir);
 				
 				Files.delete(p);
-				log.info("-- END LOADER JOB --");
+				log.info("End data loading process");
 			} 
 			catch (IOException e) {
 				log.error("Unable to execute load or read trigger file", e);
@@ -106,6 +136,50 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 				log.error("Unable to build classifier with read instances ", e);
 			}
 			
+		}
+		/**
+		 * @throws Exception 
+		 * Tabbed format as '[text] \t [class]'
+		 * @param domain
+		 * @param dir
+		 * @param tabFormat 
+		 * @throws IOException 
+		 * @throws  
+		 */
+		private void loadAsTabDelimitedText(String domain, String dir, String tabFormat) throws Exception {
+			// default binary class neg,pos
+			ConcurrentTextDirectoryLoader loader = newLoader(dir);
+			boolean clsAtFirst;
+			Map<Integer, String> scoreMap = new TreeMap<>();
+			String [] split = tabFormat.split(" ");
+			clsAtFirst = split.length >= 1 && split[0].toUpperCase().startsWith("SCORE");
+			if(split.length >= 3)
+			{
+				String[] map = split[2].split(";"); //score map
+				String[] k;
+				for(String e: map)
+				{
+					k = e.split("=");
+					if(k.length == 2)
+					{
+						try {
+							scoreMap.put(Integer.valueOf(k[0]), k[1]);
+						} catch (NumberFormatException e1) {
+							
+						}
+					}
+				}
+			}
+			
+			if(scoreMap.isEmpty())
+			{
+				scoreMap.put(0, "neg");
+				scoreMap.put(1, "pos");
+			}
+			log.info("Start processing tabbed line texts, with classAtFirst?"+clsAtFirst+" and score map "+scoreMap);
+			Instances dataset = loader.getDataSet(scoreMap, clsAtFirst);
+			
+			submitTrainingData(dataset, domain);
 		}
 		@Override
 		public void run() {
@@ -139,26 +213,6 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 			
 		}
 		
-	}
-	
-	public static void chmod777(File f) throws IOException
-	{
-		//using PosixFilePermission to set file permissions 777
-        Set<PosixFilePermission> perms = new HashSet<PosixFilePermission>();
-        //add owners permission
-        perms.add(PosixFilePermission.OWNER_READ);
-        perms.add(PosixFilePermission.OWNER_WRITE);
-        perms.add(PosixFilePermission.OWNER_EXECUTE);
-        //add group permissions
-        perms.add(PosixFilePermission.GROUP_READ);
-        perms.add(PosixFilePermission.GROUP_WRITE);
-        perms.add(PosixFilePermission.GROUP_EXECUTE);
-        //add others permissions
-        perms.add(PosixFilePermission.OTHERS_READ);
-        perms.add(PosixFilePermission.OTHERS_WRITE);
-        perms.add(PosixFilePermission.OTHERS_EXECUTE);
-        
-        Files.setPosixFilePermissions(f.toPath(), perms);
 	}
 	
 	@PostConstruct
@@ -205,6 +259,14 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 		TriggerFile tf = new TriggerFile();
 		tf.targetDir = lines.get(0);
 		tf.domain = (lines.size() >= 2 && StringUtils.hasText(lines.get(1))) ? lines.get(1) : AbstractIncrementalModelEngine.DEFAULT_CLASSIFICATION_QUEUE;
+		if(lines.size() >= 3)
+		{
+			tf.isTabbedLineDataset = Boolean.valueOf(lines.get(2));
+		}
+		if(lines.size() >= 4)
+		{
+			tf.tabFormat = lines.get(3);
+		}
 		return tf;
 		
 	}
@@ -213,6 +275,8 @@ public class TrainingDirectoryLoaderService implements DirectoryEventHandler {
 	{
 		String targetDir;
 		String domain;
+		boolean isTabbedLineDataset;
+		String tabFormat;
 	}
 	
 	@PreDestroy

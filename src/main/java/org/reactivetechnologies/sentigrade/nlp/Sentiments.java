@@ -17,13 +17,27 @@ package org.reactivetechnologies.sentigrade.nlp;
 
 class Sentiments extends SentimentVector
 {
-	public void add(SentimentVector s)
+	private int n=0;
+	public synchronized void add(SentimentVector s)
 	{
 		this.overallScore += s.overallScore;
 		this.adjScore += s.adjScore;
 		this.advScore += s.advScore;
 		this.nounScore += s.nounScore;
 		this.verbScore += s.verbScore;
+		n++;
+	}
+	
+	public synchronized void normalize()
+	{
+		if(n > 1)
+		{
+			overallScore /= n;
+			adjScore /= n;
+			advScore /= n;
+			nounScore /= n;
+			verbScore /= n;
+		}
 	}
 	
 }

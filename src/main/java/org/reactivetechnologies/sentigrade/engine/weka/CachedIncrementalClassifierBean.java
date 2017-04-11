@@ -43,7 +43,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
-import org.reactivetechnologies.sentigrade.dto.RegressionModel;
 import org.reactivetechnologies.sentigrade.files.ResourceLock;
 import org.reactivetechnologies.sentigrade.files.ResourceLockedException;
 import org.reactivetechnologies.sentigrade.weka.dto.WekaRegressionModel;
@@ -68,6 +67,8 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	private String cacheFilePath;
 	@Value("${weka.classifier.cache.sync.intervalSecs:60}")
 	private long syncDelay;
+	@Value("${weka.classifier.cache.printModel:true}")
+	private boolean printModelOnDump;
 	private static final Logger log = LoggerFactory.getLogger(CachedIncrementalClassifierBean.class);
 	public static final String CACHED_FILE_NAME = "__Weka_.model";
 	public static final String CACHE_SUBDIR = "_supervised";
@@ -113,16 +114,19 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	 * and the invocation can originate from client as well as the background thread. Also this method will only
 	 * log any IOException caught. This is done so that the client invocations do not get any exception, since the
 	 * process should not break on failure at this point.
+	 * @return 
 	 */
-	private synchronized void dumpModelSnapshot() 
+	private synchronized WekaRegressionModel dumpModelSnapshot() 
 	{
-		RegressionModel model = super.generateModelSnapshot();
-		try {
+		WekaRegressionModel model = super.generateModelSnapshot();
+		try 
+		{
 			byte[] b = utils.marshall(model);
 			saveBytes(b);
 		} catch (IOException e) {
 			log.error(domain+"| While trying to save model", e);
 		}
+		return model;
 	}
 	private ResourceLock fileLock;
 	private void lockCacheArea(File f) throws IOException
@@ -268,8 +272,12 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 				try 
 				{
 					if (modelUpdated.compareAndSet(true, false)) {
-						dumpModelSnapshot();
+						WekaRegressionModel model = dumpModelSnapshot();
 						log.info(domain + "| File sync task ran..");
+						if(printModelOnDump)
+						{
+							log.info(model.getTrainedClassifier()+"");
+						}
 					}
 					else
 						log.debug(domain + "| No build detected for file sync");

@@ -16,6 +16,10 @@
 package org.reactivetechnologies.sentigrade.files;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.HashSet;
 import java.util.Set;
 
 public interface DirectoryEventHandler {
@@ -30,4 +34,24 @@ public interface DirectoryEventHandler {
 	 * @param set
 	 */
 	void handleInitialFiles(Set<File> set);
+	
+	public static void chmod777(File f) throws IOException
+	{
+		//using PosixFilePermission to set file permissions 777
+        Set<PosixFilePermission> perms = new HashSet<PosixFilePermission>();
+        //add owners permission
+        perms.add(PosixFilePermission.OWNER_READ);
+        perms.add(PosixFilePermission.OWNER_WRITE);
+        perms.add(PosixFilePermission.OWNER_EXECUTE);
+        //add group permissions
+        perms.add(PosixFilePermission.GROUP_READ);
+        perms.add(PosixFilePermission.GROUP_WRITE);
+        perms.add(PosixFilePermission.GROUP_EXECUTE);
+        //add others permissions
+        perms.add(PosixFilePermission.OTHERS_READ);
+        perms.add(PosixFilePermission.OTHERS_WRITE);
+        perms.add(PosixFilePermission.OTHERS_EXECUTE);
+        
+        Files.setPosixFilePermissions(f.toPath(), perms);
+	}
 }

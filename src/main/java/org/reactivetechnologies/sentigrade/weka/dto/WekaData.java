@@ -76,6 +76,14 @@ public class WekaData extends TextData {
 		}
 	}
 
+	private boolean enableFilter = true;
+	public boolean isEnableFilter() {
+		return enableFilter;
+	}
+	public void setEnableFilter(boolean enableFilter) {
+		this.enableFilter = enableFilter;
+	}
+
 	private String options;
 	private Instances instances;
 	/**
@@ -141,6 +149,7 @@ public class WekaData extends TextData {
 		super.writeData(out);
 		out.writeUTF(options);
 		out.writeBoolean(isInstanceOnly);
+		out.writeBoolean(enableFilter);
 		if (instances != null) {
 			try 
 			{
@@ -213,7 +222,7 @@ public class WekaData extends TextData {
 		super.readData(in);
 		options = in.readUTF();
 		isInstanceOnly = in.readBoolean();
-		
+		enableFilter = in.readBoolean();
 		String xml = in.readUTF();
 		if(!"".equals(xml.trim()))
 		{
