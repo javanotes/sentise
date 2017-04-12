@@ -23,15 +23,15 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.reactivetechnologies.sentigrade.Sentise;
-import org.reactivetechnologies.sentigrade.dto.ClassifiedModel;
-import org.reactivetechnologies.sentigrade.dto.RequestData;
-import org.reactivetechnologies.sentigrade.err.EngineException;
-import org.reactivetechnologies.sentigrade.services.ModelExecutionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
+import reactivetechnologies.sentigrade.Sentise;
+import reactivetechnologies.sentigrade.dto.ClassifiedModel;
+import reactivetechnologies.sentigrade.dto.RequestData;
+import reactivetechnologies.sentigrade.err.EngineException;
+import reactivetechnologies.sentigrade.services.ModelExecutionService;
 import weka.classifiers.Classifier;
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -52,17 +52,17 @@ public class ClassifyOnBuiltModelTest {
 	@Test
 	public void testClassifyPositivesUsingBuiltClassifier() throws Exception 
 	{
-		RequestData train = new RequestData("that was a one time watch movie. but i liked the way he acted", Arrays.asList("neg", "pos"));
+		RequestData train = new RequestData("that was a one time watch movie. but i liked the way he acted"/*, Arrays.asList("neg", "pos")*/);
 		train.setUseSentimentVector(true);
 		String pred = classifier.classifyInstance(train);
 		System.err.println("Class predicted: " + pred);
 		
-		train = new RequestData("that was a one time watch movie. but i liked the way he acted", Arrays.asList("neg", "pos"));
+		train = new RequestData("that was a one time watch movie. but i liked the way he acted"/*, Arrays.asList("neg", "pos")*/);
 		train.setUseSentimentVector(true);
 		pred = classifier.classifyInstance(train);
 		System.err.println("Class predicted: " + pred);
 		
-		train = new RequestData("that was a one time watch movie. but i liked the way he acted", Arrays.asList("neg", "pos"));
+		train = new RequestData("Airtel has never been this good"/*, Arrays.asList("neg", "pos")*/);
 		train.setUseSentimentVector(true);
 		pred = classifier.classifyInstance(train);
 		System.err.println("Class predicted: " + pred);
@@ -72,17 +72,17 @@ public class ClassifyOnBuiltModelTest {
 	@Test
 	public void testClassifyNegativesUsingBuiltClassifier() throws Exception 
 	{
-		RequestData train = new RequestData("That was an extremely bad movie", Arrays.asList("neg", "pos"));
+		RequestData train = new RequestData("That was an extremely bad movie");
 		train.setUseSentimentVector(true);
 		String pred = classifier.classifyInstance(train);
 		System.err.println("Class predicted: " + pred);
 		
-		train = new RequestData("The worst network coverage i have ever got", Arrays.asList("neg", "pos"));
+		train = new RequestData("The worst network coverage i have ever got");
 		train.setUseSentimentVector(true);
 		pred = classifier.classifyInstance(train);
 		System.err.println("Class predicted: " + pred);
 		
-		train = new RequestData("all other operators are better than XYZ operatorator", Arrays.asList("neg", "pos"));
+		train = new RequestData("all other operators are better than XYZ operatorator");
 		train.setUseSentimentVector(true);
 		pred = classifier.classifyInstance(train);
 		System.err.println("Class predicted: " + pred);

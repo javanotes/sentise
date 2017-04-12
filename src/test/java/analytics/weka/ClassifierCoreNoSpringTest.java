@@ -21,21 +21,18 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.Enumeration;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
-import org.reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
-import org.reactivetechnologies.sentigrade.engine.weka.Preprocessor;
-import org.reactivetechnologies.sentigrade.engine.weka.Preprocessor.ArgSwitch;
-import org.reactivetechnologies.sentigrade.utils.ConfigUtil;
-import org.reactivetechnologies.sentigrade.weka.dto.WekaData;
-import org.reactivetechnologies.sentigrade.weka.dto.WekaRegressionModel;
 import org.springframework.util.ResourceUtils;
 
+import reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.Preprocessor;
+import reactivetechnologies.sentigrade.engine.weka.Preprocessor.ArgSwitch;
 import weka.classifiers.bayes.NaiveBayesUpdateable;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -49,7 +46,6 @@ import weka.core.converters.ArffLoader.ArffReader;
 public class ClassifierCoreNoSpringTest {
 
 	//@Autowired
-	AbstractIncrementalModelEngine classifier;
 	final static int ITERATION = 1000;
 	
 	private Instances readFile() throws FileNotFoundException, IOException
@@ -61,10 +57,9 @@ public class ClassifierCoreNoSpringTest {
 			return ins;
 		}
 	}
-	//@Test
+	@Before
 	public void setup() throws FileNotFoundException, IOException
 	{
-		Assert.assertNotNull(classifier);
 		Instances ins = readFile();
 		Assert.assertNotNull("No instances found", ins);
 		Assert.assertFalse("Instances is empty", ins.isEmpty());
@@ -191,37 +186,5 @@ public class ClassifierCoreNoSpringTest {
 		
 	}
 		
-	//@Test
-	public void testBuildClassifierWithInstance() throws IOException 
-	{
-		Instances ins = readFile();
-		Assert.assertNotNull("No instances found", ins);
-		Assert.assertFalse("Instances is empty", ins.isEmpty());
-		Enumeration<Instance> e = ins.enumerateInstances();
-		for(int i=0; i<ITERATION; i++)
-		{
-			if (e.hasMoreElements()) {
-				
-				Instance in = e.nextElement();
-				System.err.println("Submitting Instance==> " + i);
-				try {
-					classifier.incrementModel(new WekaData(in));
-				} catch (Exception e1) {
-					e1.printStackTrace();
-					Assert.fail();
-				} 
-			}
-			else
-				break;
-			
-		}
-		
-		WekaRegressionModel model = classifier.generateModelSnapshot();
-		Assert.assertNotNull(model);
-		
-		String xml = model.toXmlString();
-		System.out.println(ConfigUtil.prettyFormatXml(xml, 4));
-		System.err.println("Printed model gen on.....\n"+new Date(model.getGeneratedOn()));
-		
-	}
+	
 }

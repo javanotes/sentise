@@ -5,6 +5,7 @@ bin/
 .settings/
 build/
 _supervised/
+_eval/
 logs/
 
 # Mobile Tools for Java (J2ME)
