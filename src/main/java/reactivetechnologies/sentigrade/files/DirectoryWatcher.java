@@ -187,24 +187,30 @@ public class DirectoryWatcher implements Runnable {
 				Thread.currentThread().interrupt();
 		}
 	}
+	private void invokeHandlers() throws InterruptedException
+	{
+		Set<File> files = filesFromEvents();
+		for (File f : files) {
+			try
+			{
+				acquireFileAccess(f, 50, 100);
+				fireOnFileTouched(f);
+			} 
+			catch (IOException e) {
+				log.error("Unable to acquire exclusive access on trigger file", e);
+			}
+			
+		}
+	}
 	@Override
 	public void run() {
 		while (!stopRequested) 
 		{
-			try {
-				Set<File> files = filesFromEvents();
-				for (File f : files) {
-					try
-					{
-						acquireFileAccess(f, 50, 100);
-						fireOnFileTouched(f);
-					} 
-					catch (IOException e) {
-						log.error("Unable to acquire exclusive access on trigger file", e);
-					}
-					
-				}
-			} catch (ClosedWatchServiceException e) {
+			try 
+			{
+				invokeHandlers();
+			} 
+			catch (ClosedWatchServiceException e) {
 				if (!stopRequested)
 					log.error("Watch service closed unexpectedly!", e);
 			} catch (InterruptedException e) {
