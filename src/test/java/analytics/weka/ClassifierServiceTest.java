@@ -43,6 +43,7 @@ import weka.core.Attribute;
 import weka.core.DenseInstance;
 import weka.core.Instances;
 import weka.core.converters.ArffLoader.ArffReader;
+import weka.core.xml.XStream;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest(classes = {Sentise.class})
@@ -89,8 +90,8 @@ public class ClassifierServiceTest {
 			Assert.fail();
 		}
 		Assert.assertNotNull(model.model);
-		//String xml = XStream.serialize(model.model);
-		//System.out.println(xml);
+		String xml = XStream.serialize(model.model);
+		System.out.println(xml);
 	}
 	
 	@Test

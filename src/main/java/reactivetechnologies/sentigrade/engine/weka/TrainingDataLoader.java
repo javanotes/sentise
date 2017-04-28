@@ -32,7 +32,7 @@ public interface TrainingDataLoader {
 	Instances loadFromRootDirectory(String domain, String dir) throws IOException;
 	/**
 	 * Load data set from a root directory, containing plain text data files. Each line of a file will represent a single data
-	 * instance and a tab separated code to denote its class. Like '[sentence] [class]'.
+	 * instance and a tab separated code to denote its class. Like '[sentence] \t [class]'.
 	 * @param domain
 	 * @param dir
 	 * @param tabFormat

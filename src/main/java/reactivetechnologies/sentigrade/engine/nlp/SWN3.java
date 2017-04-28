@@ -16,6 +16,7 @@
 package reactivetechnologies.sentigrade.engine.nlp;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.text.ParseException;
@@ -32,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.ResourceUtils;
+
+import reactivetechnologies.sentigrade.utils.ConfigUtil;
 
 /**
  * http://sentiwordnet.isti.cnr.it/
@@ -194,14 +197,17 @@ class SWN3 {
 
 	private static final Logger log = LoggerFactory.getLogger(SWN3.class);
 
+	private String dbFile = "SentiWordNet_3.0.0.txt";
 	private void load0() throws IOException {
 		// This is our main dictionary representation
 		dictionary.clear();
 		loaded = false;
 		BufferedReader csv = null;
 		try {
-			csv = new BufferedReader(new FileReader(
-					ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX + "SentiWordNet_3.0.0.txt")));
+			File f = ConfigUtil.resolvePath(dbFile);
+			Assert.isTrue(f.exists(), "Internal error! SentiWordNet_3.0.0.txt does not exist ");
+			Assert.isTrue(f.canRead(), "Internal error! SentiWordNet_3.0.0.txt not readable");
+			csv = new BufferedReader(new FileReader(f));
 
 			Map<String, Map<Integer, Double>> synonymSet = readSynSet(csv);
 			prepareTable(synonymSet);
@@ -210,7 +216,14 @@ class SWN3 {
 			
 			//approach2();
 			
-		} catch (Exception e) {
+		} 
+		catch (IOException e) {
+			throw e;
+		}
+		catch (IllegalArgumentException e) {
+			throw new IOException(e.getMessage());
+		}
+		catch (Exception e) {
 			throw new IllegalStateException(e);
 		} finally {
 			if (csv != null) {
@@ -234,6 +247,9 @@ class SWN3 {
 
 	public SWN3() {
 
+	}
+	public SWN3(String dbFile) {
+		this.dbFile = dbFile;
 	}
 
 	public static final String NEUTRAL_SENTI = "neutral";
@@ -341,6 +357,8 @@ class SWN3 {
 	}
 	public static void main(String[] args) throws IOException {
 
+		SWN3 sentiwordnet = new SWN3();
+		sentiwordnet.load();
 		/*SWN3 sentiwordnet = new SWN3();
 		sentiwordnet.load();
 		System.out.println("good#a " + sentiwordnet.extractClass("good", "a"));

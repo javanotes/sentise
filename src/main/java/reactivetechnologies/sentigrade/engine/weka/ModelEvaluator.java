@@ -46,6 +46,8 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 
 	@Value("${weka.classifier.eval:true}")
 	private boolean enabled;
+	@Value("${weka.classifier.eval.ensemble:true}")
+	private boolean enableCluster;
 	@Value("${weka.classifier.eval.path:_eval}")
 	private String path;
 	@Value("${weka.classifier.eval.domain:}")
@@ -69,7 +71,8 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 	public void run() {
 		if(loadEvalFile())
 		{
-			log.info("* Starting model evaluation run *");
+			log.info("Starting model evaluation run with model level "+(enableCluster ? "CLUSTER" : "LOCAL"));
+			log.info("---------------------------------------------------------");
 			evaluateModel();
 			log.info("* End model evaluation *");
 		}
@@ -97,8 +100,11 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 		try 
 		{
 			Instances ins = loader.loadFromFormattedText(domain, dataDir.getAbsolutePath(), format);
-			ClassifiedModel<Classifier> model = executor.getClassifier(domain);
-			
+			ClassifiedModel<Classifier> model = enableCluster ? executor.gatherClassifier(domain) : executor.getClassifier(domain);
+			log.info("Using model: "+model.model);
+			if (log.isDebugEnabled()) {
+				log.debug(ConfigUtil.toPrettyXml(model.model));
+			}
 			VectorRequestData vector = dataFactory.getObject();
 			vector.setTextInstances(ins, IncrementalModelEngine.getDomain(domain));
 			ins = vector.toInstances();//will take time
@@ -129,7 +135,7 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 				return true;
 			}
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			log.error("", e);
 			return false;
 		}
 		return false;

@@ -113,9 +113,14 @@ public class VectorRequestData extends RequestData {
 			count++;
 			
 		}
+		int pct = count/10;
 		for (int i = 0; i < count; i++) {
-			try {
+			try 
+			{
 				data.add(builder.pollInstance());
+				if(i > 0 && i % pct == 0)
+					log.info("Processed "+(10 * (i/pct))+"% ..");
+				
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 				throw new OperationFailedUnexpectedly(e);

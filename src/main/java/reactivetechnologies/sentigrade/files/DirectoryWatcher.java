@@ -157,7 +157,36 @@ public class DirectoryWatcher implements Runnable {
 			log.error("Unable to load file", e);
 		}
 	}
-
+	/**
+	 * 
+	 * @param f
+	 * @param maxTry
+	 * @param sleep
+	 * @throws IOException
+	 */
+	private static void acquireFileAccess(File f, int maxTry, long sleep) throws IOException
+	{
+		boolean intr = false;
+		try
+		{
+			int i = 0;
+			while(i++ < maxTry && !f.canWrite()){
+				try {
+					Thread.sleep(sleep);
+				} catch (InterruptedException e) {
+					intr = true;
+				}
+			}
+			if(!f.canWrite())
+				throw new IOException("Timeout awaiting with max tries "+maxTry);
+			
+		} 
+		finally
+		{
+			if(intr)
+				Thread.currentThread().interrupt();
+		}
+	}
 	@Override
 	public void run() {
 		while (!stopRequested) 
@@ -165,7 +194,15 @@ public class DirectoryWatcher implements Runnable {
 			try {
 				Set<File> files = filesFromEvents();
 				for (File f : files) {
-					fireOnFileTouched(f);
+					try
+					{
+						acquireFileAccess(f, 50, 100);
+						fireOnFileTouched(f);
+					} 
+					catch (IOException e) {
+						log.error("Unable to acquire exclusive access on trigger file", e);
+					}
+					
 				}
 			} catch (ClosedWatchServiceException e) {
 				if (!stopRequested)

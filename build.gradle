@@ -14,8 +14,11 @@ apply plugin: 'java'
 apply plugin: 'eclipse'
 apply plugin: 'org.springframework.boot'
 
+springBoot {
+    mainClass = "reactivetechnologies.sentigrade.Sentise"
+}
 jar {
-    baseName = 'sentics'
+    baseName = 'sentigrade'
     version =  '0.1'
 }
 

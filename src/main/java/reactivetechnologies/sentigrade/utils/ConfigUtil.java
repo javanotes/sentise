@@ -45,21 +45,36 @@ public class ConfigUtil {
 		XSTREAM.alias(LWL.class.getName(), LWL.class);
 	}
 	/**
-	 * Resolve file from file system path or classpath.
+	 * Resolve file from file system path or classpath on a best effort basis.
 	 * @param path
 	 * @return
 	 * @throws FileNotFoundException
 	 */
 	public static File resolvePath(String path) throws FileNotFoundException 
 	{
+		File f;
 		try 
 		{
-			return ResourceUtils.getFile(ResourceUtils.FILE_URL_PREFIX+path);
-		} catch (FileNotFoundException e) {
-			try {
-				return ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX+path);
-			} catch (FileNotFoundException e1) {
-				return ResourceUtils.getFile(path);
+			f = ResourceUtils.getFile(path);
+			if(f.exists())
+				return f;
+			else
+				throw new FileNotFoundException();
+		} 
+		catch (Exception e) {
+			try 
+			{
+				f = ResourceUtils.getFile(ResourceUtils.CLASSPATH_URL_PREFIX+path);
+				if(f.exists())
+					return f;
+				else
+					throw new FileNotFoundException();
+			} catch (Exception e1) {
+				f = ResourceUtils.getFile(ResourceUtils.FILE_URL_PREFIX+path);
+				if(f.exists())
+					return f;
+				else
+					throw new FileNotFoundException(path);
 			}
 		}
 	}
@@ -145,7 +160,8 @@ public class ConfigUtil {
 
 			return xmlOutput.getWriter().toString();
 		} catch (Exception e) {
-			e.printStackTrace();
+			System.out.println("<WARNING_log_suppressed> "+e);
+			//e.printStackTrace();
 		}
 		return input;
 	}
