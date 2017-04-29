@@ -25,8 +25,8 @@ import org.reactivetechnologies.ticker.messaging.data.TextData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
-import reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaData;
 import reactivetechnologies.sentigrade.err.EngineException;
 import weka.classifiers.Classifier;
@@ -36,7 +36,7 @@ import weka.core.converters.CSVLoader;
 import weka.core.converters.JSONLoader;
 /**
  * The {@linkplain QueueListener} which listens for training data and submit it
- * (with preprocessing, if needed) to the {@linkplain IncrementalModelEngine} to incrementally update the Weka classifier model. 
+ * (with preprocessing, if needed) to the {@linkplain ClassificationModelEngine} to incrementally update the Weka classifier model. 
  * <p>The listener would be expecting {@linkplain WekaData} type, as event data. If not, it will try on a best effort basis to parse the 
  * input raw text as ARFF or CSV formatted, if possible.
  * @author esutdal
@@ -44,15 +44,15 @@ import weka.core.converters.JSONLoader;
  */
 public class TrainingDataListenerHandler extends AbstractQueueListener<TextData> {
 
-	public TrainingDataListenerHandler(IncrementalModelEngine<Classifier> engine) {
+	public TrainingDataListenerHandler(ClassificationModelEngine<Classifier> engine) {
 		super();
 		this.engine = engine;
 	}
 
-	private final IncrementalModelEngine<Classifier> engine;
+	private final ClassificationModelEngine<Classifier> engine;
 	protected static final Logger LOG = LoggerFactory.getLogger(TrainingDataListenerHandler.class);
 	
-	private String domain = AbstractIncrementalModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
+	private String domain = AbstractClassificationModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
 	@Override
 	public Class<TextData> dataType() {
 		return TextData.class;

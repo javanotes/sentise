@@ -34,7 +34,7 @@ import com.hazelcast.nio.ObjectDataInput;
 import com.hazelcast.nio.ObjectDataOutput;
 import com.hazelcast.nio.serialization.DataSerializable;
 
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.services.ModelExecutionService;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -119,8 +119,8 @@ public class RequestData implements DataSerializable {
 	protected void buildStructure()
 	{
 		Assert.notEmpty(getClasses(), "'class' is empty or null");
-		Attribute attr0 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT, (List<String>) null, IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX);
-		Attribute attr1 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_CLASS, getClasses(), IncrementalModelEngine.CLASSIFIER_ATTRIB_CLASS_IDX);
+		Attribute attr0 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_TEXT, (List<String>) null, ClassificationModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX);
+		Attribute attr1 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_CLASS, getClasses(), ClassificationModelEngine.CLASSIFIER_ATTRIB_CLASS_IDX);
 		structure = new Instances(getDomain(), new ArrayList<>(Arrays.asList(attr0, attr1)), getDataSet().size());
 		structure.setClass(attr1);
 	}
@@ -141,8 +141,8 @@ public class RequestData implements DataSerializable {
 	{
 		Instance i = new DenseInstance(2);
 		i.setDataset(struct);
-		i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX), t.getText());
-		i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_CLASS_IDX), t.getTextClass());
+		i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_TEXT_IDX), t.getText());
+		i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_CLASS_IDX), t.getTextClass());
 		return i;
 	}
 	/**
@@ -240,7 +240,7 @@ public class RequestData implements DataSerializable {
 	public void setUseSentimentVector(boolean useSentimentVector) {
 		this.useSentimentVector = useSentimentVector;
 	}
-	private String domain = IncrementalModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
+	private String domain = ClassificationModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
 	private final List<String> classes = new ArrayList<>();
 	private final List<Tuple> dataSet = new LinkedList<>();
 

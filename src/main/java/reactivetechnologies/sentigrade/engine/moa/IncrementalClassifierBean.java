@@ -64,7 +64,6 @@ import reactivetechnologies.sentigrade.err.OperationFailedUnexpectedly;
  * A extension of Weka updateable classifier.
  *  @see http://wiki.pentaho.com/display/DATAMINING/Handling+Large+Data+Sets+with+Weka
  *  
- *  @deprecated WIP
  */
 
 class IncrementalClassifierBean extends AbstractMOAModelEngine {

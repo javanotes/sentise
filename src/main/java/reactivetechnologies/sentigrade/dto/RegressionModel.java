@@ -156,7 +156,7 @@ public abstract class RegressionModel implements DataSerializable, Serializable 
 		try {
 			bytes = getModelBytes(StandardCharsets.UTF_8);
 			murmurHash = HashUtil.MurmurHash3_x64_64(bytes, 0, bytes.length);
-			md5Hex = MD5Util.toMD5String(getClassifierImpl().toString() + murmurHash);
+			md5Hex = MD5Util.toMD5String(getClassifierImpl() + murmurHash);
 		} catch (Exception e) {
 			e.printStackTrace();
 			murmurHash = -1;

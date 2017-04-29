@@ -30,9 +30,9 @@ import org.junit.runner.RunWith;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.springframework.util.ResourceUtils;
 
-import reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
-import reactivetechnologies.sentigrade.engine.weka.Preprocessor;
-import reactivetechnologies.sentigrade.engine.weka.Preprocessor.ArgSwitch;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.service.WordVectorPreprocessor;
+import reactivetechnologies.sentigrade.engine.weka.service.WordVectorPreprocessor.ArgSwitch;
 import weka.classifiers.bayes.NaiveBayesUpdateable;
 import weka.core.Attribute;
 import weka.core.DenseInstance;
@@ -76,13 +76,13 @@ public class ClassifierCoreNoSpringTest {
 	    
 	    Instances dataFiltered = loader.getDataSet();
 	    dataFiltered.setClassIndex(1);
-	    dataFiltered = Preprocessor.process(dataFiltered, new ArgSwitch());//Filter.useFilter(loader.getDataSet(), filter);
+	    dataFiltered = WordVectorPreprocessor.process(dataFiltered, new ArgSwitch());//Filter.useFilter(loader.getDataSet(), filter);
 
 	    // train NaiveBayes
 	    bayes = new NaiveBayesUpdateable();
 	    //nb.setDoNotCheckCapabilities(true);
 	    System.err.println("building model.............");
-	    bayes.buildClassifier(AbstractIncrementalModelEngine.getStructure(dataFiltered));
+	    bayes.buildClassifier(AbstractClassificationModelEngine.getStructure(dataFiltered));
 	    
 	    Enumeration<Instance> e = dataFiltered.enumerateInstances();
 	    

@@ -37,7 +37,6 @@ import reactivetechnologies.sentigrade.err.EngineException;
 import reactivetechnologies.sentigrade.err.ModelMergeFailureException;
 import weka.classifiers.Classifier;
 import weka.classifiers.Evaluation;
-import weka.classifiers.meta.Stacking;
 import weka.classifiers.meta.Vote;
 import weka.core.Instances;
 import weka.core.Utils;
@@ -48,13 +47,14 @@ import weka.core.Utils;
  * @author esutdal
  *
  */
-public enum CombinerType {
+public enum EnsembleCombiner {
 
 	STACKING {
 		@Override
 		public Classifier getEnsembleClassifier(Classifier[] classifiers, Instances instances, String optionStr)
 				throws EngineException {
-			Stacking s = new Stacking();
+			/*Stacking s = new Stacking();
+			s.setMetaClassifier(new Logistic());
 			try {
 				s.setClassifiers(classifiers);
 				if (StringUtils.hasText(optionStr)) {
@@ -64,7 +64,9 @@ public enum CombinerType {
 				throw new ModelMergeFailureException(e);
 			}
 
-			return s;
+			return s;*/
+			
+			throw new UnsupportedOperationException("Only VOTING allowed");
 
 		}
 	},

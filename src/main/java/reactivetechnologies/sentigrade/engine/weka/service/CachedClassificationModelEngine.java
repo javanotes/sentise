@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package reactivetechnologies.sentigrade.engine.weka;
+package reactivetechnologies.sentigrade.engine.weka.service;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -61,7 +61,7 @@ import weka.core.Instances;
  * @author esutdal
  *
  */
-public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
+public class CachedClassificationModelEngine extends WekaClassificationModelEngine {
 
 	@Value("${weka.classifier.cache.path:user.dir}")
 	private String cacheFilePath;
@@ -69,7 +69,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	private long syncDelay;
 	@Value("${weka.classifier.cache.printModel:true}")
 	private boolean printModelOnDump;
-	private static final Logger log = LoggerFactory.getLogger(CachedIncrementalClassifierBean.class);
+	private static final Logger log = LoggerFactory.getLogger(CachedClassificationModelEngine.class);
 	public static final String CACHED_FILE_NAME = "__Weka_.model";
 	public static final String CACHE_SUBDIR = "_supervised";
 	public static final String CACHE_SUBDIR2 = "_domains";
@@ -87,7 +87,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 	 * @param c
 	 * @param size
 	 */
-	public CachedIncrementalClassifierBean(Classifier c) {
+	public CachedClassificationModelEngine(Classifier c) {
 		super(c);
 	}
 
@@ -104,7 +104,7 @@ public class CachedIncrementalClassifierBean extends IncrementalClassifierBean {
 		try {
 			return loadModel(false);
 		} catch (IOException e) {
-			log.warn("Unable to load a cached model! Will fetch transient. Ignoring error => "+ e);
+			log.info(domain+"| Unable to load a cached model. Will fetch transient");
 			return super.generateModelSnapshot();
 		}
 	}

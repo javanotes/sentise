@@ -48,7 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanInitializationException;
 
-import reactivetechnologies.sentigrade.engine.weka.CachedIncrementalClassifierBean;
+import reactivetechnologies.sentigrade.engine.weka.service.CachedClassificationModelEngine;
 
 /**
  * {@linkplain WatchService} utility.
@@ -73,7 +73,7 @@ public class DirectoryWatcher implements Runnable {
 	
 	private void acquireWatchArea() throws IllegalAccessException, IOException
 	{
-		fileLock = new ResourceLock(root.toFile(), CachedIncrementalClassifierBean.LOCK_FILE);
+		fileLock = new ResourceLock(root.toFile(), CachedClassificationModelEngine.LOCK_FILE);
 		fileLock.lock();
 	}
 	

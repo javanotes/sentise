@@ -26,12 +26,13 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package reactivetechnologies.sentigrade.engine.weka;
+package reactivetechnologies.sentigrade.engine.weka.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import reactivetechnologies.sentigrade.engine.nlp.LemmatizationStemmer;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
 import weka.attributeSelection.InfoGainAttributeEval;
 import weka.attributeSelection.Ranker;
 import weka.core.Instances;
@@ -54,11 +55,11 @@ import weka.filters.unsupervised.attribute.StringToWordVector;
  * @author esutdal
  *@see https://www.ijirset.com/upload/2015/november/65_Text.pdf
  */
-public class Preprocessor {
+public class WordVectorPreprocessor {
 
 	@SuppressWarnings("unused")
-	private static final Logger log = LoggerFactory.getLogger(Preprocessor.class);
-	private Preprocessor() {
+	private static final Logger log = LoggerFactory.getLogger(WordVectorPreprocessor.class);
+	private WordVectorPreprocessor() {
 		super();
 	}
 	
@@ -134,7 +135,7 @@ public class Preprocessor {
 			else
 				strToWord.setTokenizer(new NGramTokenizer());
 			
-			final Instances struct = AbstractIncrementalModelEngine.getStructure(dataRaw);
+			final Instances struct = AbstractClassificationModelEngine.getStructure(dataRaw);
 			
 			if (args.useLemmatizer) {
 				strToWord.setStemmer(new LemmatizationStemmer());
@@ -153,13 +154,13 @@ public class Preprocessor {
 			//The StringToWordVector filter places the class attribute of the generated output data at the beginning.
 			Reorder reord = new Reorder();
 			reord.setOptions(Utils.splitOptions("-R 2-last,first"));
-			reord.setInputFormat(AbstractIncrementalModelEngine.getStructure(wordVector));
+			reord.setInputFormat(AbstractClassificationModelEngine.getStructure(wordVector));
 			wordVector = Filter.useFilter(wordVector, reord);
 			
 			if (args.useNominalAttrib) {
 				//numeric to nominal filter
 				NumericToNominal numnom = new NumericToNominal();
-				numnom.setInputFormat(AbstractIncrementalModelEngine.getStructure(wordVector));
+				numnom.setInputFormat(AbstractClassificationModelEngine.getStructure(wordVector));
 				numnom.setOptions(Utils.splitOptions("-R 2"));
 				wordVector = Filter.useFilter(wordVector, numnom);
 			}
@@ -167,7 +168,7 @@ public class Preprocessor {
 			if (args.useFeatureSelect) {
 				//feature selection
 				AttributeSelection asFilter = new AttributeSelection();
-				asFilter.setInputFormat(AbstractIncrementalModelEngine.getStructure(wordVector));
+				asFilter.setInputFormat(AbstractClassificationModelEngine.getStructure(wordVector));
 				asFilter.setEvaluator(new InfoGainAttributeEval());//chi-square, gain ratio
 				Ranker bfSearch = new Ranker();
 				bfSearch.setThreshold(0.0);

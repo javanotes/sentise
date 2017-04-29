@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <class-diagram version="1.1.14" icons="true" always-add-relationships="false" generalizations="true" realizations="true" 
   associations="true" dependencies="false" nesting-relationships="true" router="FAN">  
-  <interface id="1" language="java" name="reactivetechnologies.sentigrade.engine.IncrementalModelEngine" 
-    project="sentise" file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/IncrementalModelEngine.java" 
-    binary="false" corner="BOTTOM_RIGHT">    
+  <interface id="1" language="java" name="reactivetechnologies.sentigrade.engine.ClassificationModelEngine" 
+    project="sentise" 
+    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/ClassificationModelEngine.java" binary="false" 
+    corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="590" y="68"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
       sort-features="false" accessors="true" visibility="true">      
@@ -11,9 +12,9 @@
       <operations public="true" package="true" protected="true" private="true" static="true"/>    
     </display>  
   </interface>  
-  <class id="2" language="java" name="reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine" 
+  <class id="2" language="java" name="reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine" 
     project="sentise" 
-    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/AbstractIncrementalModelEngine.java" 
+    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/AbstractClassificationModelEngine.java" 
     binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="587" y="266"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -23,8 +24,9 @@
     </display>  
   </class>  
   <class id="3" language="java" 
-    name="reactivetechnologies.sentigrade.engine.weka.IncrementalClassifierBean.BuildClassifierTask" project="sentise" 
-    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/IncrementalClassifierBean.java" 
+    name="reactivetechnologies.sentigrade.engine.weka.service.WekaClassificationModelEngine.BuildClassifierTask" 
+    project="sentise" 
+    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/service/WekaClassificationModelEngine.java" 
     binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="994" y="537"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -33,9 +35,9 @@
       <operations public="true" package="false" protected="false" private="false" static="true"/>    
     </display>  
   </class>  
-  <class id="4" language="java" name="reactivetechnologies.sentigrade.engine.weka.IncrementalClassifierBean" 
+  <class id="4" language="java" name="reactivetechnologies.sentigrade.engine.weka.service.WekaClassificationModelEngine" 
     project="sentise" 
-    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/IncrementalClassifierBean.java" 
+    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/service/WekaClassificationModelEngine.java" 
     binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="592" y="528"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -44,9 +46,9 @@
       <operations public="false" package="true" protected="true" private="false" static="true"/>    
     </display>  
   </class>  
-  <class id="5" language="java" name="reactivetechnologies.sentigrade.engine.weka.CachedIncrementalClassifierBean" 
-    project="sentise" 
-    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/CachedIncrementalClassifierBean.java" 
+  <class id="5" language="java" 
+    name="reactivetechnologies.sentigrade.engine.weka.service.CachedClassificationModelEngine" project="sentise" 
+    file="/sentise/src/main/java/reactivetechnologies/sentigrade/engine/weka/service/CachedClassificationModelEngine.java" 
     binary="false" corner="BOTTOM_RIGHT">    
     <position height="-1" width="-1" x="593" y="778"/>    
     <display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
@@ -55,13 +57,13 @@
       <operations public="true" package="true" protected="false" private="false" static="true"/>    
     </display>  
   </class>  
-  <realization id="6">    
-    <end type="SOURCE" refId="2"/>    
-    <end type="TARGET" refId="1"/>  
-  </realization>  
-  <generalization id="7">    
+  <generalization id="6">    
     <end type="SOURCE" refId="4"/>    
     <end type="TARGET" refId="2"/>  
+  </generalization>  
+  <generalization id="7">    
+    <end type="SOURCE" refId="5"/>    
+    <end type="TARGET" refId="4"/>  
   </generalization>  
   <nesting id="8">    
     <end type="SOURCE" refId="4"/>    
@@ -69,16 +71,20 @@
   </nesting>  
   <association id="9">    
     <end type="SOURCE" refId="4" navigable="false">      
-      <attribute id="10" name="buildTask"/>      
-      <multiplicity id="11" minimum="0" maximum="1"/>    
+      <attribute id="10" name="buildTask">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </attribute>      
+      <multiplicity id="11" minimum="0" maximum="1">        
+        <position height="0" width="0" x="0" y="0"/>      
+      </multiplicity>    
     </end>    
     <end type="TARGET" refId="3" navigable="true"/>    
     <display labels="true" multiplicity="true"/>  
   </association>  
-  <generalization id="12">    
-    <end type="SOURCE" refId="5"/>    
-    <end type="TARGET" refId="4"/>  
-  </generalization>  
+  <realization id="12">    
+    <end type="SOURCE" refId="2"/>    
+    <end type="TARGET" refId="1"/>  
+  </realization>  
   <classifier-display autosize="true" stereotype="true" package="true" initial-value="false" signature="true" 
     sort-features="false" accessors="true" visibility="true">    
     <attributes public="true" package="true" protected="true" private="true" static="true"/>    

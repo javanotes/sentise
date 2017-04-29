@@ -15,7 +15,7 @@ import com.yahoo.labs.samoa.instances.InstancesHeader;
 
 import moa.classifiers.Classifier;
 import reactivetechnologies.sentigrade.dto.RegressionModel;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.moa.dto.MoaData;
 import reactivetechnologies.sentigrade.engine.moa.dto.MoaRegressionModel;
 import reactivetechnologies.sentigrade.err.EngineException;
@@ -23,9 +23,8 @@ import reactivetechnologies.sentigrade.err.EngineException;
  * Base class to derive Weka incremental classifiers.
  * @author esutdal
  *
- *@deprecated WIP
  */
-public abstract class AbstractMOAModelEngine implements IncrementalModelEngine<Classifier> {
+public abstract class AbstractMOAModelEngine implements ClassificationModelEngine<Classifier> {
 
 	
 	public AbstractMOAModelEngine(String learnerClass) throws ReflectiveOperationException {

@@ -32,7 +32,7 @@ import org.springframework.util.StringUtils;
 import reactivetechnologies.sentigrade.dto.ClassifiedModel;
 import reactivetechnologies.sentigrade.dto.VectorRequestData;
 import reactivetechnologies.sentigrade.dto.VectorRequestDataFactoryBean;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.err.EngineException;
 import reactivetechnologies.sentigrade.services.ModelCombinerService;
 import reactivetechnologies.sentigrade.services.ModelExecutionService;
@@ -42,7 +42,7 @@ import weka.classifiers.Evaluation;
 import weka.core.Instances;
 
 @Component
-public class ModelEvaluator implements CommandLineRunner, Runnable{
+public class ModelEvaluationRunner implements CommandLineRunner, Runnable{
 
 	@Value("${weka.classifier.eval:true}")
 	private boolean enabled;
@@ -63,8 +63,8 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 	@Autowired
 	private VectorRequestDataFactoryBean dataFactory;
 	
-	private static final Logger log = LoggerFactory.getLogger(ModelEvaluator.class);
-	public ModelEvaluator() {
+	private static final Logger log = LoggerFactory.getLogger(ModelEvaluationRunner.class);
+	public ModelEvaluationRunner() {
 	}
 
 	@Override
@@ -82,7 +82,7 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 
 	private void evaluateModel() {
 		Set<String> domains = new HashSet<>();
-		domains.add(IncrementalModelEngine.DEFAULT_CLASSIFIER_DOMAIN);
+		domains.add(ClassificationModelEngine.DEFAULT_CLASSIFIER_DOMAIN);
 		if (StringUtils.hasText(domain)) {
 			for (String s : domain.split(",")) {
 				domains.add(s);
@@ -95,6 +95,20 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 		}
 	}
 
+	/*private void evaluateBoosting(Instances ins, Classifier model) throws Exception
+	{
+		log.info("<< Using AdaBoost >>");
+		AdaBoostM1 adaBoost = new AdaBoostM1();
+		adaBoost.setClassifier(model);
+		
+		Evaluation e = new Evaluation(ins);
+		e.useNoPriors();
+		e.evaluateModel(adaBoost, ins);
+		log.info("-- Matrix --");
+		System.out.println(e.toMatrixString(domain));
+		log.info("-- Summary --");
+		System.out.println(e.toSummaryString(domain, false));
+	}*/
 	private void evaluateDomainModel(String domain) {
 		log.info("Evaluating local model for domain "+domain);
 		try 
@@ -106,7 +120,7 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 				log.debug(ConfigUtil.toPrettyXml(model.model));
 			}
 			VectorRequestData vector = dataFactory.getObject();
-			vector.setTextInstances(ins, IncrementalModelEngine.getDomain(domain));
+			vector.setTextInstances(ins, ClassificationModelEngine.getDomain(domain));
 			ins = vector.toInstances();//will take time
 			
 			Evaluation e = new Evaluation(ins);
@@ -116,6 +130,8 @@ public class ModelEvaluator implements CommandLineRunner, Runnable{
 			System.out.println(e.toMatrixString(domain));
 			log.info("-- Summary --");
 			System.out.println(e.toSummaryString(domain, false));
+			
+			//evaluateBoosting(ins, model.model);
 		} 
 		catch (IOException e) {
 			log.warn("Unable to read evaluation file/dir", e);

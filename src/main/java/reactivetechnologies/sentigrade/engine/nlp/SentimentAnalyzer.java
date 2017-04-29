@@ -52,7 +52,7 @@ import edu.stanford.nlp.trees.tregex.TregexMatcher;
 import edu.stanford.nlp.trees.tregex.TregexPattern;
 import edu.stanford.nlp.util.CoreMap;
 import reactivetechnologies.sentigrade.dto.RequestData.Tuple;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import weka.core.DenseInstance;
 import weka.core.Instance;
 import weka.core.Instances;
@@ -594,14 +594,14 @@ public class SentimentAnalyzer {
 			Instance i = new DenseInstance(6);
 			i.setDataset(struct);
 			SentimentVector vector = getSentiment(t.getText());//this invocation can take time, depending on the text size and complexity.
-			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ADJ), vector.getAdjScore());
-			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ADV), vector.getAdvScore());
-			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_NOUN), vector.getNounScore());
-			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_VERB), vector.getVerbScore());
-			i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ALL), vector.getOverallScore());
+			i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ADJ), vector.getAdjScore());
+			i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ADV), vector.getAdvScore());
+			i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_NOUN), vector.getNounScore());
+			i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_VERB), vector.getVerbScore());
+			i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ALL), vector.getOverallScore());
 			if (t.getTextClass() != null) {
 				//not a test instance
-				i.setValue(struct.attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_CLASS_IDX),
+				i.setValue(struct.attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_CLASS_IDX),
 						t.getTextClass());
 			}
 			return i;

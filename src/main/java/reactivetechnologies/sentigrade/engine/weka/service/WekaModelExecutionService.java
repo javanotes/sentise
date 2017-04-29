@@ -29,7 +29,7 @@ import reactivetechnologies.sentigrade.dto.CombinerResult;
 import reactivetechnologies.sentigrade.dto.RequestData;
 import reactivetechnologies.sentigrade.dto.VectorRequestData;
 import reactivetechnologies.sentigrade.dto.VectorRequestDataFactoryBean;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaData;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaRegressionModel;
 import reactivetechnologies.sentigrade.err.EngineException;
@@ -57,7 +57,7 @@ public class WekaModelExecutionService implements ModelExecutionService {
 	
 	public static String getDomain(String domain)
 	{
-		return IncrementalModelEngine.getDomain(domain);
+		return ClassificationModelEngine.getDomain(domain);
 	}
 	private void buildClassifierBatch(WekaData aData, String domain)
 	{

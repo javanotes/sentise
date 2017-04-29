@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.nlp.SentimentAnalyzer;
 import reactivetechnologies.sentigrade.engine.nlp.SentimentAnalyzer.BuildInstancesDelegate;
 import reactivetechnologies.sentigrade.err.OperationFailedUnexpectedly;
@@ -151,14 +151,14 @@ public class VectorRequestData extends RequestData {
 	@Override
 	protected void buildStructure() 
 	{
-		Attribute attr0 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ADJ, IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ADJ_IDX);
-		Attribute attr1 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ADV, IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ADV_IDX);
-		Attribute attr2 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_NOUN, IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_NOUN_IDX);
-		Attribute attr3 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_VERB, IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_VERB_IDX);
-		Attribute attr4 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ALL, IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_ALL_IDX);
+		Attribute attr0 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ADJ, ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ADJ_IDX);
+		Attribute attr1 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ADV, ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ADV_IDX);
+		Attribute attr2 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_NOUN, ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_NOUN_IDX);
+		Attribute attr3 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_VERB, ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_VERB_IDX);
+		Attribute attr4 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ALL, ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_ALL_IDX);
 		attr4.setWeight(2.0);
-		Attribute attr5 = new Attribute(IncrementalModelEngine.CLASSIFIER_ATTRIB_CLASS, getClasses(),
-				IncrementalModelEngine.CLASSIFIER_ATTRIB_ST_CLASS_IDX);
+		Attribute attr5 = new Attribute(ClassificationModelEngine.CLASSIFIER_ATTRIB_CLASS, getClasses(),
+				ClassificationModelEngine.CLASSIFIER_ATTRIB_ST_CLASS_IDX);
 		
 		structure = new Instances(getDomain(), new ArrayList<>(Arrays.asList(attr0, attr1, attr2, attr3, attr4, attr5)), getDataSet().size());
 		structure.setClass(attr5);

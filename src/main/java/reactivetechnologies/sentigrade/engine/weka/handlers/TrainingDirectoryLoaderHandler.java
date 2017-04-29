@@ -44,8 +44,8 @@ import org.springframework.util.StringUtils;
 
 import reactivetechnologies.sentigrade.dto.VectorRequestData;
 import reactivetechnologies.sentigrade.dto.VectorRequestDataFactoryBean;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
-import reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.weka.TrainingDataLoader;
 import reactivetechnologies.sentigrade.files.DirectoryEventHandler;
 import reactivetechnologies.sentigrade.files.DirectoryWatcher;
@@ -87,7 +87,7 @@ public class TrainingDirectoryLoaderHandler implements DirectoryEventHandler, Tr
 	public void submitTrainingData(Instances i, String domain) throws Exception
 	{
 		VectorRequestData data = dataFactory.getObject();
-		data.setTextInstances(i, IncrementalModelEngine.getDomain(domain));
+		data.setTextInstances(i, ClassificationModelEngine.getDomain(domain));
 		classifService.buildClassifier(data);
 	}
 	/* (non-Javadoc)
@@ -273,7 +273,7 @@ public class TrainingDirectoryLoaderHandler implements DirectoryEventHandler, Tr
 		
 		TriggerFile tf = new TriggerFile();
 		tf.targetDir = lines.get(0);
-		tf.domain = (lines.size() >= 2 && StringUtils.hasText(lines.get(1))) ? lines.get(1) : AbstractIncrementalModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
+		tf.domain = (lines.size() >= 2 && StringUtils.hasText(lines.get(1))) ? lines.get(1) : AbstractClassificationModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
 		if(lines.size() >= 3)
 		{
 			tf.isTabbedLineDataset = Boolean.valueOf(lines.get(2));

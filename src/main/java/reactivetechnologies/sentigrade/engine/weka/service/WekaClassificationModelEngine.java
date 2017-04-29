@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package reactivetechnologies.sentigrade.engine.weka;
+package reactivetechnologies.sentigrade.engine.weka.service;
 
 import java.util.ArrayList;
 import java.util.Enumeration;
@@ -50,9 +50,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 
 import reactivetechnologies.sentigrade.dto.RegressionModel;
-import reactivetechnologies.sentigrade.engine.weka.Preprocessor.ArgSwitch;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.EnsembleCombiner;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaData;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaRegressionModel;
+import reactivetechnologies.sentigrade.engine.weka.service.WordVectorPreprocessor.ArgSwitch;
 import reactivetechnologies.sentigrade.err.EngineException;
 import reactivetechnologies.sentigrade.err.OperationFailedUnexpectedly;
 import weka.classifiers.AbstractClassifier;
@@ -68,7 +70,7 @@ import weka.core.Instances;
  *  @see http://wiki.pentaho.com/display/DATAMINING/Handling+Large+Data+Sets+with+Weka
  */
 
-class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
+public class WekaClassificationModelEngine extends AbstractClassificationModelEngine {
 
 	/*
 	 * 
@@ -117,7 +119,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		this.domain = domain;
 	}
 
-	private static final Logger log = LoggerFactory.getLogger(IncrementalClassifierBean.class);
+	private static final Logger log = LoggerFactory.getLogger(WekaClassificationModelEngine.class);
 
 	/*@Value("${weka.classifier.tokenize:true}")
 	private boolean filterDataset;*/
@@ -171,7 +173,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	 * @param size
 	 *            size of blocking queue
 	 */
-	public IncrementalClassifierBean(Classifier c) 
+	public WekaClassificationModelEngine(Classifier c) 
 	{
 		//printIncrAlgoValid();
 		clazzifier = c;
@@ -346,7 +348,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 			ArgSwitch args = new ArgSwitch();
 			args.setUseLucene(lucene);
 			args.setUseNominalAttrib(clazzifier instanceof NaiveBayesUpdateable);
-			return Preprocessor.process(data.getInstances(), args);
+			return WordVectorPreprocessor.process(data.getInstances(), args);
 		}
 		return data.getInstances();
 	}
@@ -368,51 +370,59 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 			log.debug(data.toSummaryString());
 			log.debug(data.toString());
 			setStructure(data);
-			clazzifier.buildClassifier(structure);
+			if (isUpdateable()) {
+				clazzifier.buildClassifier(structure);
+			}
 			attribsInitialized = true;
-			log.info(domain + "| Classifier attributes initialized..");
+			log.info(domain + "| Classifier attributes initialized");
 		}
 	}
 	private void updateClassifier(Instances data) throws Exception
 	{
-		setStructure(data);
+		//setStructure(data);//not needed 
 		for (Enumeration<Instance> e = data.enumerateInstances(); e.hasMoreElements();) {
 			Instance i = e.nextElement();
-			updateWithInstance(i);
+			updateWithInstance(i, false);
 		}
 		//this is a volatile variable. updating only once to reduce cost of cpu cache flushes.
 		lastBuildAt = System.currentTimeMillis();
-		log.info(domain+"| Classifier build updated. Attrib count: "+structure.numAttributes());
+		log.info(domain+"| Classifier model updated. Attrib count: "+structure.numAttributes());
 	}
-	
-	private synchronized void updateWithInstance(Instance i) throws Exception
+	/**
+	 * This might be invoked concurrently.
+	 * @param i
+	 * @throws Exception
+	 */
+	private synchronized void updateWithInstance(Instance i, boolean updateTimestamp) throws Exception
 	{
 		i.setDataset(structure);
 		((UpdateableClassifier) clazzifier).updateClassifier(i);
-		if(modelUpdated.compareAndSet(false, true)){
+		if(updateTimestamp)
 			lastBuildAt = System.currentTimeMillis();
-			log.info(domain+"| Classifier build incremented.");
+		if(modelUpdated.compareAndSet(false, true)){
+			log.info(domain+"| Classifier model updated with instance ..");
 		}
 	}
 	
 	@Override
 	public void buildClassifier(Instances data) throws Exception {
+		if(!attribsInitialized)
+		{
+			initAttribs(data);
+		}
 		if (isUpdateable()) 
 		{
-			if(!attribsInitialized)
-			{
-				initAttribs(data);
-			}
 			updateClassifier(data);
 		} 
 		else
 		{
-			log.warn(classifierAlgorithm()+" is not incremental. Expecting a complete dataset for training.");
+			log.warn(domain+"| '" + classifierAlgorithm()
+					+ "' is not an incremental algorithm. Expecting a complete dataset for training. Any previous model built will be overriden");
 			clazzifier.buildClassifier(data);
 			if(modelUpdated.compareAndSet(false, true)){
 				lastBuildAt = System.currentTimeMillis();
 			}
-			log.info(domain+"| Classifier build executed. Attrib count: "+structure.numAttributes());
+			log.info(domain+"| Classifier model built. Attrib count: "+structure.numAttributes());
 		}
 
 	}
@@ -484,7 +494,7 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 	}
 
 	@Override
-	public WekaRegressionModel ensembleBuiltModels(List<RegressionModel> models, CombinerType combiner, WekaData evaluationSet) throws EngineException {
+	public WekaRegressionModel ensembleBuiltModels(List<RegressionModel> models, EnsembleCombiner combiner, WekaData evaluationSet) throws EngineException {
 		Classifier[] classifiers = new Classifier[models.size()];
 		int i = 0;
 		for (RegressionModel model : models) {
@@ -511,7 +521,12 @@ class IncrementalClassifierBean extends AbstractIncrementalModelEngine {
 		{
 			initAttribs(nextInstance.dataset());
 		}
-		updateWithInstance(nextInstance);
+		updateWithInstance(nextInstance, true);
+	}
+
+	@Override
+	public boolean isClassifierUpdatable() {
+		return isUpdateable();
 	}
 
 }

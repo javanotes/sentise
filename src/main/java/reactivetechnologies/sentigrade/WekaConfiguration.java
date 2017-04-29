@@ -54,8 +54,8 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 
 import reactivetechnologies.sentigrade.dto.CombinerResult;
-import reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
-import reactivetechnologies.sentigrade.engine.weka.CachedIncrementalClassifierBean;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.service.CachedClassificationModelEngine;
 import weka.classifiers.AbstractClassifier;
 import weka.classifiers.Classifier;
 import weka.core.Utils;
@@ -88,17 +88,17 @@ public class WekaConfiguration {
 	private void splitDomains0()
 	{
 		if(!StringUtils.hasText(domains)){
-			domains = AbstractIncrementalModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
+			domains = AbstractClassificationModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
 		}
 		else
-			domains += ","+AbstractIncrementalModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
+			domains += ","+AbstractClassificationModelEngine.DEFAULT_CLASSIFIER_DOMAIN;
 		
 		domainSplits = domains.split(",");
 	}
 	
 	@Bean(name = CACHED_INCR_CLASSIFIER_BEAN)
 	@Scope(scopeName = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
-	public AbstractIncrementalModelEngine getClassifier(String domain) throws Exception {
+	public AbstractClassificationModelEngine getClassifier(String domain) throws Exception {
 		
 		Classifier c = null;
 		try {
@@ -115,7 +115,7 @@ public class WekaConfiguration {
 			
 		}
 
-		CachedIncrementalClassifierBean cached = new CachedIncrementalClassifierBean(c);
+		CachedClassificationModelEngine cached = new CachedClassificationModelEngine(c);
 		cached.setDomain(domain);
 		return cached;
 	}

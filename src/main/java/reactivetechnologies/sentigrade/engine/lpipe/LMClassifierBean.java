@@ -21,10 +21,10 @@ import com.aliasi.classify.DynamicLMClassifier;
 import com.aliasi.classify.LMClassifier;
 import com.aliasi.stats.MultivariateEstimator;
 
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import weka.core.Instance;
 
-public class LMClassifierBean implements IncrementalModelEngine<LMClassifier<?,MultivariateEstimator>> {
+public class LMClassifierBean implements ClassificationModelEngine<LMClassifier<?,MultivariateEstimator>> {
 
 	private LMClassifier<?,MultivariateEstimator> classifier;
 	public LMClassifierBean() {

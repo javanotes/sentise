@@ -5,7 +5,7 @@ import org.springframework.util.StringUtils;
 
 import weka.core.Instance;
 
-public interface IncrementalModelEngine<T> {
+public interface ClassificationModelEngine<T> {
 	
 	/**
 	 * Name of the default classification queue on which regression listener will listen.

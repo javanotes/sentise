@@ -3,7 +3,7 @@ package reactivetechnologies.sentigrade.engine.weka;
 import java.util.List;
 
 import reactivetechnologies.sentigrade.dto.RegressionModel;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaData;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaRegressionModel;
 import reactivetechnologies.sentigrade.err.EngineException;
@@ -15,7 +15,7 @@ import weka.core.Instances;
  * @author esutdal
  *
  */
-public abstract class AbstractIncrementalModelEngine extends AbstractClassifier implements IncrementalModelEngine<Classifier> {
+public abstract class AbstractClassificationModelEngine extends AbstractClassifier implements ClassificationModelEngine<Classifier> {
 
 	/**
 	 * 
@@ -43,8 +43,8 @@ public abstract class AbstractIncrementalModelEngine extends AbstractClassifier 
 
 	/**
 	 * Generate an ensemble output using a preset evaluation based on the
-	 * {@linkplain CombinerType}, for the generated snapshot models. By default
-	 * uses a {@linkplain CombinerType#VOTING} ensembling approach.
+	 * {@linkplain EnsembleCombiner}, for the generated snapshot models. By default
+	 * uses a {@linkplain EnsembleCombiner#VOTING} ensembling approach.
 	 * 
 	 * @param models
 	 * @param combiner
@@ -52,11 +52,16 @@ public abstract class AbstractIncrementalModelEngine extends AbstractClassifier 
 	 * @return ensemble model
 	 * @throws EngineException
 	 */
-	public abstract WekaRegressionModel ensembleBuiltModels(List<RegressionModel> models, CombinerType combiner, WekaData evaluationSet)
+	public abstract WekaRegressionModel ensembleBuiltModels(List<RegressionModel> models, EnsembleCombiner combiner, WekaData evaluationSet)
 			throws EngineException;
 	/**
 	 * Subclasses to override this method for initialization codes.
 	 * @return
 	 */
 	protected abstract boolean onInitialization();
+	/**
+	 * If it is an updatable classifier.
+	 * @return
+	 */
+	public abstract boolean isClassifierUpdatable();
 }

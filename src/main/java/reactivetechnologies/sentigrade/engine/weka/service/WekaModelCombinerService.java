@@ -77,10 +77,10 @@ import reactivetechnologies.sentigrade.dto.CombinerResult;
 import reactivetechnologies.sentigrade.dto.RegressionModel;
 import reactivetechnologies.sentigrade.dto.Signal;
 import reactivetechnologies.sentigrade.dto.VectorRequestData;
-import reactivetechnologies.sentigrade.engine.IncrementalModelEngine;
+import reactivetechnologies.sentigrade.engine.ClassificationModelEngine;
 import reactivetechnologies.sentigrade.engine.nlp.SentimentAnalyzer.BuildInstancesDelegate;
-import reactivetechnologies.sentigrade.engine.weka.AbstractIncrementalModelEngine;
-import reactivetechnologies.sentigrade.engine.weka.CombinerType;
+import reactivetechnologies.sentigrade.engine.weka.AbstractClassificationModelEngine;
+import reactivetechnologies.sentigrade.engine.weka.EnsembleCombiner;
 import reactivetechnologies.sentigrade.engine.weka.dto.WekaRegressionModel;
 import reactivetechnologies.sentigrade.engine.weka.handlers.TrainingDataListenerHandler;
 import reactivetechnologies.sentigrade.err.EngineException;
@@ -90,6 +90,7 @@ import reactivetechnologies.sentigrade.services.ModelCombinerService;
 import reactivetechnologies.sentigrade.utils.ConfigUtil;
 import weka.classifiers.Classifier;
 import weka.core.Instance;
+import weka.core.Instances;
 
 
 /**
@@ -115,7 +116,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	@Autowired
 	private WekaConfiguration config;
 	
-	private Map<String, AbstractIncrementalModelEngine> classifierBeans = new HashMap<>();
+	private Map<String, AbstractClassificationModelEngine> classifierBeans = new HashMap<>();
 	private ConcurrentMap<String, CountDownLatch> latches = new ConcurrentHashMap<>();
 	
 	@Autowired
@@ -128,7 +129,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	@Autowired
 	private ApplicationContext currentCtx;
 	
-	private void registerListener(IncrementalModelEngine<Classifier> eng, String domain)
+	private void registerListener(ClassificationModelEngine<Classifier> eng, String domain)
 	{
 		TrainingDataListenerHandler listener = new TrainingDataListenerHandler(eng);
 		listener.setDomain(domain);
@@ -136,7 +137,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	}
 	private void registerEngine(String domain)
 	{
-		AbstractIncrementalModelEngine eng = (AbstractIncrementalModelEngine) currentCtx.getBean(WekaConfiguration.CACHED_INCR_CLASSIFIER_BEAN, domain);
+		AbstractClassificationModelEngine eng = (AbstractClassificationModelEngine) currentCtx.getBean(WekaConfiguration.CACHED_INCR_CLASSIFIER_BEAN, domain);
 		Assert.notNull(eng, "'"+WekaConfiguration.CACHED_INCR_CLASSIFIER_BEAN+"' bean is null!");
 		classifierBeans.put(domain, eng);
 		log.info(domain+"| Loaded engine for classifier ["+eng.classifierAlgorithm()+"] ");
@@ -166,7 +167,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 		{
 			boolean isSnapshotDone = requestClusterSnapshot(domain, snapshotAwaitSecs, TimeUnit.SECONDS);
 			if (isSnapshotDone) {
-				log.info(domain+"| Starting ensembling..");
+				log.info(domain+"| Starting ensembling using "+combiner);
 				modelId = ensembleModels(domain);
 				if (modelId != null) {
 					result = CombinerResult.CREATED;
@@ -254,7 +255,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	{
 		assertDomain(domain);
 		String id = classifierBeans.get(domain).classifierAlgorithm();
-		return id += "-"+domain;
+		return id += "-"+domain+"-"+combiner;
 	}
 	private void save(TimeUIDMapData<RegressionModel> mapData, String domain)
 	{
@@ -287,7 +288,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	private String makeEnsemble(List<RegressionModel> models, String domain) throws EngineException
 	{
 		assertDomain(domain);
-		WekaRegressionModel ensemble = classifierBeans.get(domain).ensembleBuiltModels(models, CombinerType.valueOf(combiner), null);
+		WekaRegressionModel ensemble = classifierBeans.get(domain).ensembleBuiltModels(models, EnsembleCombiner.valueOf(combiner), null);
 		log.debug(ensemble.getTrainedClassifier() + "");
 		ensemble.generateId();
 		
@@ -364,7 +365,7 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 				return t;
 			}
 		});
-		log.info("Execution engine initialization complete. Ensemble models will be saved to IMap "+ConfigUtil.WEKA_MODEL_PERSIST_MAP);
+		log.info("Execution engine initialization complete. Ensemble models will be saved to IMap '"+ConfigUtil.WEKA_MODEL_PERSIST_MAP+"'");
 	}
 
 	private void notifyIfProcessing(String domain) {
@@ -376,13 +377,9 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	{
 		Assert.isTrue(classifierBeans.containsKey(domain), "Invalid domain snapshot request received! "+domain);
 	}
-
-	private void dumpClassifierSnapshot(String domain) 
+	
+	private void addToModelSnapshots(WekaRegressionModel model, String domain)
 	{
-		assertDomain(domain);
-		WekaRegressionModel model = classifierBeans.get(domain).generateModelSnapshot();
-		log.debug(""+model.getTrainedClassifier());
-		
 		ISet<RegressionModel> modelSnapshots = hzService.hazelcastInstance().getSet(domain);
 		boolean added = modelSnapshots.add(model);
 		Assert.isTrue(!modelSnapshots.isEmpty(), domain+"| adding to ISet failed. isEmpty");
@@ -391,6 +388,20 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 			log.info(domain+"| Dumped model successfully..");
 		else
 			log.warn(domain+"| * Model snapshot was not added *");
+	}
+
+	private void dumpClassifierSnapshot(String domain) 
+	{
+		assertDomain(domain);
+		WekaRegressionModel model = classifierBeans.get(domain).generateModelSnapshot();
+		log.debug(""+model.getTrainedClassifier());
+		
+		if(model.isAttribsInitialized())
+		{
+			addToModelSnapshots(model, domain);
+		}
+		else
+			log.info(domain+"| Skipping dump since model is not built");
 		
 		sendMessage(new Signal(DUMP_MODEL_RES, domain));
 	}
@@ -501,8 +512,10 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 	private RegressionModel loadLast(String domain)
 	{
 		TimeUIDMapData<RegressionModel> md = load(domain);
-		if(md != null && !md.isEmpty())
+		if(md != null && !md.isEmpty()){
+			//System.out.println("WekaModelCombinerService.loadLast() "+ md.keySet().size());
 			return md.entrySet().iterator().next().getValue();
+		}
 		
 		throw new NoSuchElementException(domain+"| No model found!");
 			
@@ -556,11 +569,9 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 			throw new EngineException(e);
 		}
 	}
-	@Override
-	public void buildVectorModel(VectorRequestData data) throws EngineException {
-		if(!classifierBeans.containsKey(data.getDomain()))
-			throw new EngineException("Invalid domain specified- "+data.getDomain());
-		
+	
+	private void updateModelEngine(VectorRequestData data) throws EngineException
+	{
 		BuildInstancesDelegate bld = data.toInstancesAsync();
 		Instance ins = null;
 		int tenPct = bld.getCount() / 10;
@@ -584,6 +595,34 @@ public class WekaModelCombinerService implements MessageListener<Signal>, ModelC
 				throw new EngineException(data.getDomain()+"| Exception while training model", e);
 			}
 			
+		}
+		long end = System.currentTimeMillis();
+		log.info(data.getDomain()+"| End model build. Time taken: "+ConfigUtil.toTimeElapsedString((end-start)));
+	}
+	@Override
+	public void buildVectorModel(VectorRequestData data) throws EngineException {
+		if(!classifierBeans.containsKey(data.getDomain()))
+			throw new EngineException("Invalid domain specified- "+data.getDomain());
+		
+		AbstractClassificationModelEngine engine = classifierBeans.get(data.getDomain());
+		if(engine.isClassifierUpdatable())
+		{
+			updateModelEngine(data);
+		}
+		else
+		{
+			buildModelEngine(data);
+		}
+		
+	}
+	private void buildModelEngine(VectorRequestData data) throws EngineException {
+		log.info(data.getDomain()+"| Starting analysis and build on a non-incremental classifier. This may take some time..");
+		long start = System.currentTimeMillis();
+		Instances ins = data.toInstances();
+		try {
+			classifierBeans.get(data.getDomain()).buildClassifier(ins);
+		} catch (Exception e) {
+			throw new EngineException(data.getDomain()+"| Exception while training model", e);
 		}
 		long end = System.currentTimeMillis();
 		log.info(data.getDomain()+"| End model build. Time taken: "+ConfigUtil.toTimeElapsedString((end-start)));

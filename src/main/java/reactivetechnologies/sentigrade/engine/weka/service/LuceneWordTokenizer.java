@@ -26,7 +26,7 @@ SOFTWARE.
 *
 * ============================================================================
 */
-package reactivetechnologies.sentigrade.engine.weka;
+package reactivetechnologies.sentigrade.engine.weka.service;
 
 import java.io.Closeable;
 import java.util.Iterator;
